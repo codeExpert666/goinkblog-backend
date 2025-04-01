@@ -2,8 +2,6 @@ module github.com/codeExpert666/goinkblog-backend
 
 go 1.23.6
 
-replace github.com/codeExpert666/goinkblog-backend => ./
-
 require (
 	github.com/casbin/casbin/v2 v2.103.0
 	github.com/casbin/gorm-adapter/v3 v3.32.0

@@ -1,0 +1,29 @@
+{
+  "logger": {
+    "debug": true,
+    "level": "debug",
+    "caller_skip": 2,
+    "file": {
+      "enable": false,
+      "path": "logs/goinkblog.log",
+      "max_size": 32,
+      "max_backups": 20
+    },
+    "hooks": [
+      {
+        "enable": true,
+        "level": "info",
+        "max_buffer": 256,
+        "max_thread": 2,
+        "options": {
+          "debug": "true",
+          "dsn": "root:zx123456@tcp(127.0.0.1:3306)/goinkblog?charset=utf8mb4&parseTime=True&loc=Local",
+          "max_open_conns": "16",
+          "max_idle_conns": "4",
+          "max_life_time": "86400",
+          "max_idle_time": "7200"
+        }
+      }
+    ]
+  }
+} 

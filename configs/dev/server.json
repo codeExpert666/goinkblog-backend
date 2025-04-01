@@ -1,0 +1,70 @@
+{
+  "general": {
+    "app_name": "goinkblog",
+    "version": "v1.0.0",
+    "debug": true,
+    "disable_swagger": false,
+    "disable_print_config": false,
+    "pprof_addr": "",
+    "http": {
+      "addr": ":52443",
+      "shutdown_timeout": 30,
+      "max_content_length": 67108864,
+      "read_timeout": 60,
+      "write_timeout": 60,
+      "idle_timeout": 10,
+      "cert_file": "",
+      "key_file": ""
+    },
+    "admin": {
+      "id": 1,
+      "username": "XinnZ",
+      "email": "zhouxin23333@gmail.com",
+      "password": "Zx199908310019",
+      "avatar": "/pic/avatars/admin.jpg",
+      "bio": "I'm the administrator of GoInkBlog.",
+      "role": "admin"
+    }
+  },
+  "storage": {
+    "db": {
+      "debug": true,
+      "auto_migrate": true,
+      "dsn": "root:zx123456@tcp(127.0.0.1:3306)/goinkblog?charset=utf8mb4&parseTime=True&loc=Local",
+      "max_idle_conns": 50,
+      "max_open_conns": 100,
+      "max_life_time": 86400,
+      "max_idle_time": 3600,
+      "table_prefix": ""
+    },
+    "cache": {
+      "delimiter": ":",
+      "redis": {
+        "addr": "127.0.0.1:6379",
+        "db": 0,
+        "username": "",
+        "password": ""
+      }
+    }
+  },
+  "util": {
+    "captcha": {
+      "length": 4,
+      "width": 400,
+      "height": 160,
+      "redis": {
+        "key_prefix": "captcha:"
+      }
+    }
+  },
+  "ai": {
+    "provider": "local",
+    "api_key": "",
+    "endpoint": "http://localhost:11434/api/generate",
+    "model": "gemma3:12b",
+    "temperature": 0.7
+  },
+  "dictionary": {
+    "user_cache_exp": 4
+  }
+}

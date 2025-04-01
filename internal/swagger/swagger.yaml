@@ -1,0 +1,2794 @@
+definitions:
+  schema.AIConfig:
+    properties:
+      api_key:
+        type: string
+      endpoint:
+        type: string
+      model:
+        type: string
+      provider:
+        description: openai, local, etc.
+        type: string
+      temperature:
+        type: number
+    type: object
+  schema.AIResponse:
+    properties:
+      result:
+        type: string
+      suggestions:
+        items:
+          type: string
+        type: array
+    type: object
+  schema.APIAccessTrendItem:
+    properties:
+      client_error_count:
+        type: integer
+      date:
+        type: string
+      server_error_count:
+        type: integer
+      success_count:
+        type: integer
+      total_count:
+        type: integer
+    type: object
+  schema.ArticleListItem:
+    properties:
+      author:
+        description: 作者名称
+        type: string
+      author_avatar:
+        description: 作者头像
+        type: string
+      author_id:
+        type: integer
+      category_id:
+        type: integer
+      category_name:
+        description: 分类名称
+        type: string
+      comment_count:
+        type: integer
+      cover:
+        type: string
+      created_at:
+        type: string
+      favorite_count:
+        type: integer
+      id:
+        type: integer
+      interaction_time:
+        description: 交互时间（用于历史记录等）
+        type: string
+      like_count:
+        type: integer
+      status:
+        type: string
+      summary:
+        type: string
+      tags:
+        description: 标签列表
+        items:
+          type: string
+        type: array
+      title:
+        type: string
+      view_count:
+        type: integer
+    type: object
+  schema.ArticlePaginationResult:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/schema.ArticleListItem'
+        type: array
+      page:
+        type: integer
+      page_size:
+        type: integer
+      total:
+        type: integer
+      total_pages:
+        type: integer
+    type: object
+  schema.ArticleResponse:
+    properties:
+      author:
+        description: 作者名称
+        type: string
+      author_avatar:
+        description: 作者头像
+        type: string
+      author_id:
+        type: integer
+      category_id:
+        type: integer
+      category_name:
+        description: 分类名称
+        type: string
+      comment_count:
+        type: integer
+      content:
+        type: string
+      cover:
+        type: string
+      created_at:
+        type: string
+      favorite_count:
+        type: integer
+      id:
+        type: integer
+      interactions:
+        allOf:
+        - $ref: '#/definitions/schema.InteractionResponse'
+        description: 交互状态
+      like_count:
+        type: integer
+      status:
+        type: string
+      summary:
+        type: string
+      tags:
+        description: 标签列表
+        items:
+          $ref: '#/definitions/schema.Tag'
+        type: array
+      title:
+        type: string
+      updated_at:
+        type: string
+      view_count:
+        type: integer
+    type: object
+  schema.ArticleStatisticResponse:
+    properties:
+      totalArticles:
+        type: integer
+      totalComments:
+        type: integer
+      totalFavorites:
+        type: integer
+      totalLikes:
+        type: integer
+      totalViews:
+        type: integer
+    type: object
+  schema.Captcha:
+    properties:
+      captcha_id:
+        type: string
+    type: object
+  schema.CategoryDistItem:
+    properties:
+      count:
+        type: integer
+      name:
+        type: string
+    type: object
+  schema.CategoryPaginationResult:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/schema.CategoryResponse'
+        type: array
+      page:
+        type: integer
+      page_size:
+        type: integer
+      total:
+        type: integer
+      total_pages:
+        type: integer
+    type: object
+  schema.CategoryResponse:
+    properties:
+      article_count:
+        description: 文章数量
+        type: integer
+      created_at:
+        type: string
+      description:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  schema.CommentPaginationResult:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/schema.CommentResponse'
+        type: array
+      page:
+        type: integer
+      page_size:
+        type: integer
+      total:
+        type: integer
+      total_pages:
+        type: integer
+    type: object
+  schema.CommentResponse:
+    properties:
+      article_id:
+        type: integer
+      author:
+        description: 作者名称
+        type: string
+      author_id:
+        type: integer
+      avatar:
+        description: 作者头像
+        type: string
+      content:
+        type: string
+      created_at:
+        type: string
+      id:
+        type: integer
+      parent_id:
+        type: integer
+      replies:
+        description: 回复列表
+        items:
+          $ref: '#/definitions/schema.CommentResponse'
+        type: array
+      updated_at:
+        type: string
+    type: object
+  schema.EnforcerResponse:
+    properties:
+      allowed:
+        type: boolean
+    type: object
+  schema.InteractionResponse:
+    properties:
+      favorited:
+        description: 是否已收藏
+        type: boolean
+      liked:
+        description: 是否已点赞
+        type: boolean
+    type: object
+  schema.Logger:
+    properties:
+      created_at:
+        description: 创建时间
+        type: string
+      data:
+        description: 日志数据
+        type: string
+      id:
+        description: 日志ID
+        type: string
+      level:
+        description: 日志级别
+        type: string
+      message:
+        description: 日志消息
+        type: string
+      stack:
+        description: 错误堆栈
+        type: string
+      tag:
+        description: 日志标签
+        type: string
+      trace_id:
+        description: 链路ID
+        type: string
+      user_id:
+        description: 用户ID
+        type: integer
+      username:
+        description: 用户名称（不存储在数据库中）
+        type: string
+    type: object
+  schema.LoggerPaginationResult:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/schema.Logger'
+        type: array
+      page:
+        type: integer
+      page_size:
+        type: integer
+      total:
+        type: integer
+      total_pages:
+        type: integer
+    type: object
+  schema.LoginResponse:
+    properties:
+      token:
+        $ref: '#/definitions/schema.LoginToken'
+      user:
+        $ref: '#/definitions/schema.UserResponse'
+    type: object
+  schema.LoginToken:
+    properties:
+      access_token:
+        type: string
+      expires_at:
+        type: integer
+      token_type:
+        type: string
+    type: object
+  schema.PolicyListItem:
+    properties:
+      action:
+        type: string
+      created_at:
+        type: string
+      id:
+        type: integer
+      object:
+        type: string
+      subject:
+        type: string
+      type:
+        type: string
+    type: object
+  schema.PolicyListResponse:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/schema.PolicyListItem'
+        type: array
+      total:
+        type: integer
+    type: object
+  schema.Tag:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  schema.TagPaginationResult:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/schema.TagResponse'
+        type: array
+      page:
+        type: integer
+      page_size:
+        type: integer
+      total:
+        type: integer
+      total_pages:
+        type: integer
+    type: object
+  schema.TagResponse:
+    properties:
+      article_count:
+        description: 文章数量
+        type: integer
+      created_at:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  schema.UserActivityTrendItem:
+    properties:
+      date:
+        type: string
+      user_count:
+        type: integer
+    type: object
+  schema.UserResponse:
+    properties:
+      avatar:
+        type: string
+      bio:
+        type: string
+      created_at:
+        type: string
+      email:
+        type: string
+      id:
+        type: integer
+      role:
+        type: string
+      updated_at:
+        type: string
+      username:
+        type: string
+    type: object
+  util.ResponseResult:
+    properties:
+      code:
+        description: 错误码
+        type: integer
+      data:
+        description: 响应数据
+      message:
+        description: 错误消息
+        type: string
+    type: object
+info:
+  contact: {}
+  description: GoInk Blog是一个轻量级但功能完备的智能博客系统，采用前后端分离架构，集成AI功能增强内容创作体验。
+  title: GoInk Blog API
+  version: v1.0.0
+paths:
+  /api/ai/config:
+    get:
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ResponseResult'
+            - properties:
+                data:
+                  $ref: '#/definitions/schema.AIConfig'
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: 获取 AI 配置
+      tags:
+      - AIAPI
+    put:
+      parameters:
+      - description: AI 提供商
+        in: body
+        name: provider
+        schema:
+          type: string
+      - description: AI API 密钥
+        in: body
+        name: api_key
+        schema:
+          type: string
+      - description: AI API 端点
+        in: body
+        name: endpoint
+        schema:
+          type: string
+      - description: AI 模型
+        in: body
+        name: model
+        schema:
+          type: string
+      - description: AI 温度
+        in: body
+        maximum: 2
+        minimum: 0
+        name: temperature
+        schema:
+          type: number
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ResponseResult'
+            - properties:
+                data:
+                  $ref: '#/definitions/schema.AIConfig'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+      security:
+      - ApiKeyAuth: []
+      summary: 更新 AI 配置
+      tags:
+      - AIAPI
+  /api/ai/polish:
+    post:
+      parameters:
+      - description: 原始文章内容
+        in: body
+        name: content
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ResponseResult'
+            - properties:
+                data:
+                  $ref: '#/definitions/schema.AIResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+      security:
+      - ApiKeyAuth: []
+      summary: 文章润色
+      tags:
+      - AIAPI
+  /api/ai/summary:
+    post:
+      parameters:
+      - description: 原始文章内容
+        in: body
+        name: content
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ResponseResult'
+            - properties:
+                data:
+                  $ref: '#/definitions/schema.AIResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+      security:
+      - ApiKeyAuth: []
+      summary: 生成摘要
+      tags:
+      - AIAPI
+  /api/ai/tags:
+    post:
+      parameters:
+      - description: 原始文章内容
+        in: body
+        name: content
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ResponseResult'
+            - properties:
+                data:
+                  $ref: '#/definitions/schema.AIResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+      security:
+      - ApiKeyAuth: []
+      summary: 推荐标签
+      tags:
+      - AIAPI
+  /api/ai/title:
+    post:
+      parameters:
+      - description: 原始文章内容
+        in: body
+        name: content
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ResponseResult'
+            - properties:
+                data:
+                  $ref: '#/definitions/schema.AIResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+      security:
+      - ApiKeyAuth: []
+      summary: 生成标题建议
+      tags:
+      - AIAPI
+  /api/auth/avatar:
+    post:
+      consumes:
+      - multipart/form-data
+      parameters:
+      - description: 头像图片文件
+        in: formData
+        name: avatar
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ResponseResult'
+            - properties:
+                data:
+                  additionalProperties:
+                    allOf:
+                    - type: string
+                    - properties:
+                        url:
+                          type: string
+                      type: object
+                  type: object
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+      security:
+      - ApiKeyAuth: []
+      summary: 上传用户头像
+      tags:
+      - AuthAPI
+  /api/auth/captcha/id:
+    get:
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ResponseResult'
+            - properties:
+                data:
+                  $ref: '#/definitions/schema.Captcha'
+              type: object
+      summary: 获取验证码ID
+      tags:
+      - AuthAPI
+  /api/auth/captcha/image:
+    get:
+      parameters:
+      - description: 验证码ID
+        in: query
+        name: id
+        required: true
+        type: string
+      - description: 重新生成验证码（reload=1）
+        in: query
+        name: reload
+        type: number
+      produces:
+      - image/png
+      responses:
+        "200":
+          description: '验证码图片 - 尺寸: 400x160 像素'
+          schema:
+            type: string
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+      summary: 响应验证码图片（宽400px x 高160px）
+      tags:
+      - AuthAPI
+  /api/auth/currentUser:
+    get:
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ResponseResult'
+            - properties:
+                data:
+                  $ref: '#/definitions/schema.UserResponse'
+              type: object
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取当前用户信息
+      tags:
+      - AuthAPI
+  /api/auth/login:
+    post:
+      parameters:
+      - description: 用户名
+        in: body
+        name: username
+        required: true
+        schema:
+          type: string
+      - description: 密码
+        in: body
+        name: password
+        required: true
+        schema:
+          type: string
+      - description: 验证码
+        in: body
+        name: captcha
+        required: true
+        schema:
+          type: string
+      - description: 验证码ID
+        in: body
+        name: captcha_id
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ResponseResult'
+            - properties:
+                data:
+                  $ref: '#/definitions/schema.LoginResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+      summary: 用户以用户名、密码和验证码登录
+      tags:
+      - AuthAPI
+  /api/auth/logout:
+    post:
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+      security:
+      - ApiKeyAuth: []
+      summary: 用户退出登录
+      tags:
+      - AuthAPI
+  /api/auth/profile:
+    put:
+      parameters:
+      - description: 用户名
+        in: body
+        maxLength: 20
+        minLength: 3
+        name: username
+        schema:
+          type: string
+      - description: 邮箱
+        format: email
+        in: body
+        name: email
+        schema:
+          type: string
+      - description: 个人简介
+        in: body
+        name: bio
+        schema:
+          type: string
+      - description: 头像URL
+        in: body
+        name: avatar
+        schema:
+          type: string
+      - description: 密码
+        in: body
+        name: password
+        schema:
+          type: string
+      - description: 旧密码
+        in: body
+        name: old_password
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ResponseResult'
+            - properties:
+                data:
+                  $ref: '#/definitions/schema.UserResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+      security:
+      - ApiKeyAuth: []
+      summary: 更新用户资料
+      tags:
+      - AuthAPI
+  /api/auth/rbac/enforce:
+    post:
+      parameters:
+      - description: 主体(用户或角色)
+        in: body
+        name: subject
+        required: true
+        schema:
+          type: string
+      - description: 对象(资源)
+        in: body
+        name: object
+        required: true
+        schema:
+          type: string
+      - description: 动作(操作)
+        in: body
+        name: action
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ResponseResult'
+            - properties:
+                data:
+                  $ref: '#/definitions/schema.EnforcerResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+      security:
+      - ApiKeyAuth: []
+      summary: 权限验证测试
+      tags:
+      - RBACAPI
+  /api/auth/rbac/policies:
+    get:
+      parameters:
+      - description: 页码
+        in: query
+        minimum: 1
+        name: page
+        required: true
+        type: integer
+      - description: 每页数量
+        in: query
+        maximum: 100
+        minimum: 1
+        name: page_size
+        required: true
+        type: integer
+      - description: 策略类型(p或g)
+        enum:
+        - p
+        - g
+        in: query
+        name: type
+        type: string
+      - description: 主体(用户或角色)
+        in: query
+        name: subject
+        type: string
+      - description: 对象(资源)
+        in: query
+        name: object
+        type: string
+      - description: 动作(操作)
+        in: query
+        name: action
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ResponseResult'
+            - properties:
+                data:
+                  $ref: '#/definitions/schema.PolicyListResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取策略列表
+      tags:
+      - RBACAPI
+  /api/auth/rbac/policy:
+    delete:
+      parameters:
+      - description: 主体(用户或角色)
+        in: body
+        name: subject
+        required: true
+        schema:
+          type: string
+      - description: 对象(资源)
+        in: body
+        name: object
+        required: true
+        schema:
+          type: string
+      - description: 动作(操作)
+        in: body
+        name: action
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+        "404":
+          description: 策略不存在
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+      security:
+      - ApiKeyAuth: []
+      summary: 移除策略
+      tags:
+      - RBACAPI
+    post:
+      parameters:
+      - description: 主体(用户或角色)
+        in: body
+        name: subject
+        required: true
+        schema:
+          type: string
+      - description: 对象(资源)
+        in: body
+        name: object
+        required: true
+        schema:
+          type: string
+      - description: 动作(操作)
+        in: body
+        name: action
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+        "409":
+          description: 策略已存在
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+      security:
+      - ApiKeyAuth: []
+      summary: 添加策略
+      tags:
+      - RBACAPI
+  /api/auth/rbac/reload:
+    post:
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+      security:
+      - ApiKeyAuth: []
+      summary: 重新加载策略
+      tags:
+      - RBACAPI
+  /api/auth/rbac/role:
+    delete:
+      parameters:
+      - description: 角色
+        in: body
+        name: role
+        required: true
+        schema:
+          type: string
+      - description: 用户
+        in: body
+        name: user
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+        "404":
+          description: 用户角色关系不存在
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+      security:
+      - ApiKeyAuth: []
+      summary: 为用户移除角色
+      tags:
+      - RBACAPI
+    post:
+      parameters:
+      - description: 角色
+        in: body
+        name: role
+        required: true
+        schema:
+          type: string
+      - description: 用户
+        in: body
+        name: user
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+        "409":
+          description: 用户角色关系已存在
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+      security:
+      - ApiKeyAuth: []
+      summary: 为用户添加角色
+      tags:
+      - RBACAPI
+  /api/auth/rbac/role/{role}/users:
+    get:
+      parameters:
+      - description: 角色名
+        in: path
+        name: role
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ResponseResult'
+            - properties:
+                data:
+                  additionalProperties:
+                    items:
+                      allOf:
+                      - type: string
+                      - properties:
+                          users:
+                            items:
+                              type: string
+                            type: array
+                        type: object
+                    type: array
+                  type: object
+              type: object
+        "400":
+          description: 角色名不能为空
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取具有指定角色的所有用户
+      tags:
+      - RBACAPI
+  /api/auth/rbac/roles:
+    get:
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ResponseResult'
+            - properties:
+                data:
+                  additionalProperties:
+                    items:
+                      allOf:
+                      - type: string
+                      - properties:
+                          roles:
+                            items:
+                              type: string
+                            type: array
+                        type: object
+                    type: array
+                  type: object
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取所有角色
+      tags:
+      - RBACAPI
+  /api/auth/rbac/user/{user}/roles:
+    get:
+      parameters:
+      - description: 用户名
+        in: path
+        name: user
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ResponseResult'
+            - properties:
+                data:
+                  additionalProperties:
+                    items:
+                      allOf:
+                      - type: string
+                      - properties:
+                          roles:
+                            items:
+                              type: string
+                            type: array
+                        type: object
+                    type: array
+                  type: object
+              type: object
+        "400":
+          description: 用户名不能为空
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取用户的所有角色
+      tags:
+      - RBACAPI
+  /api/auth/register:
+    post:
+      parameters:
+      - description: 用户名
+        in: body
+        maxLength: 20
+        minLength: 3
+        name: username
+        required: true
+        schema:
+          type: string
+      - description: 邮箱
+        format: email
+        in: body
+        name: email
+        required: true
+        schema:
+          type: string
+      - description: 密码
+        in: body
+        minLength: 6
+        name: password
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ResponseResult'
+            - properties:
+                data:
+                  $ref: '#/definitions/schema.LoginResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+      summary: 用户以邮箱、用户名和密码注册
+      tags:
+      - AuthAPI
+  /api/blog/articles:
+    get:
+      parameters:
+      - default: 1
+        description: 页码
+        in: query
+        minimum: 1
+        name: page
+        type: integer
+      - default: 10
+        description: 每页容量
+        in: query
+        maximum: 100
+        minimum: 1
+        name: page_size
+        type: integer
+      - collectionFormat: multi
+        description: 分类ID列表（可多选）
+        in: query
+        items:
+          type: integer
+        minimum: 1
+        name: category_ids
+        type: array
+      - collectionFormat: multi
+        description: 标签ID列表（可多选）
+        in: query
+        items:
+          type: integer
+        minimum: 1
+        name: tag_ids
+        type: array
+      - description: 作者ID
+        in: query
+        minimum: 1
+        name: author_id
+        type: integer
+      - description: 状态
+        enum:
+        - published
+        - draft
+        in: query
+        name: status
+        type: string
+      - default: newest
+        description: 排序方式
+        enum:
+        - newest
+        - popular
+        - most_commented
+        - most_liked
+        in: query
+        name: sort_by
+        type: string
+      - description: 搜索关键词
+        in: query
+        name: keyword
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ResponseResult'
+            - properties:
+                data:
+                  $ref: '#/definitions/schema.ArticlePaginationResult'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+      summary: 获取（搜索）文章列表
+      tags:
+      - ArticleAPI
+    post:
+      parameters:
+      - description: 文章标题
+        in: body
+        name: title
+        required: true
+        schema:
+          type: string
+      - description: 文章内容
+        in: body
+        name: content
+        required: true
+        schema:
+          type: string
+      - description: 文章摘要
+        in: body
+        name: summary
+        schema:
+          type: string
+      - description: 文章分类ID
+        in: body
+        minimum: 1
+        name: category_id
+        schema:
+          type: integer
+      - description: 文章标签ID列表
+        in: body
+        name: tag_ids
+        schema:
+          items:
+            type: integer
+          type: array
+      - description: 文章封面图片URL
+        in: body
+        name: cover
+        schema:
+          type: string
+      - description: 文章状态
+        in: body
+        name: status
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ResponseResult'
+            - properties:
+                data:
+                  $ref: '#/definitions/schema.ArticleResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+      security:
+      - ApiKeyAuth: []
+      summary: 创建文章
+      tags:
+      - ArticleAPI
+  /api/blog/articles/{id}:
+    delete:
+      parameters:
+      - description: 文章ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+      security:
+      - ApiKeyAuth: []
+      summary: 删除文章
+      tags:
+      - ArticleAPI
+    get:
+      parameters:
+      - description: 文章ID
+        in: path
+        minimum: 1
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ResponseResult'
+            - properties:
+                data:
+                  $ref: '#/definitions/schema.ArticleResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+      summary: 获取文章详情
+      tags:
+      - ArticleAPI
+    put:
+      parameters:
+      - description: 文章ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 文章标题
+        in: body
+        name: title
+        schema:
+          type: string
+      - description: 文章内容
+        in: body
+        name: content
+        schema:
+          type: string
+      - description: 文章摘要
+        in: body
+        name: summary
+        schema:
+          type: string
+      - description: 文章分类ID
+        in: body
+        minimum: 1
+        name: category_id
+        schema:
+          type: integer
+      - description: 文章标签ID列表
+        in: body
+        name: tag_ids
+        schema:
+          items:
+            type: integer
+          type: array
+      - description: 文章封面图片URL
+        in: body
+        name: cover
+        schema:
+          type: string
+      - description: 文章状态
+        in: body
+        name: status
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ResponseResult'
+            - properties:
+                data:
+                  $ref: '#/definitions/schema.ArticleResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+      security:
+      - ApiKeyAuth: []
+      summary: 更新文章
+      tags:
+      - ArticleAPI
+  /api/blog/articles/{id}/favorite:
+    post:
+      parameters:
+      - description: 文章ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ResponseResult'
+            - properties:
+                data:
+                  additionalProperties:
+                    allOf:
+                    - type: boolean
+                    - properties:
+                        favorited:
+                          type: boolean
+                      type: object
+                  type: object
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+      security:
+      - ApiKeyAuth: []
+      summary: 收藏/取消收藏文章
+      tags:
+      - ArticleAPI
+  /api/blog/articles/{id}/like:
+    post:
+      parameters:
+      - description: 文章ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ResponseResult'
+            - properties:
+                data:
+                  additionalProperties:
+                    allOf:
+                    - type: boolean
+                    - properties:
+                        liked:
+                          type: boolean
+                      type: object
+                  type: object
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+      security:
+      - ApiKeyAuth: []
+      summary: 点赞/取消点赞文章
+      tags:
+      - ArticleAPI
+  /api/blog/articles/commented:
+    get:
+      parameters:
+      - default: 1
+        description: 页数
+        in: query
+        minimum: 1
+        name: page
+        type: integer
+      - default: 10
+        description: 页容量
+        in: query
+        maximum: 100
+        minimum: 1
+        name: page_size
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ResponseResult'
+            - properties:
+                data:
+                  $ref: '#/definitions/schema.ArticlePaginationResult'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取用户评论过的文章
+      tags:
+      - ArticleAPI
+  /api/blog/articles/favorites:
+    get:
+      parameters:
+      - default: 1
+        description: 页数
+        in: query
+        minimum: 1
+        name: page
+        type: integer
+      - default: 10
+        description: 页容量
+        in: query
+        maximum: 100
+        minimum: 1
+        name: page_size
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ResponseResult'
+            - properties:
+                data:
+                  $ref: '#/definitions/schema.ArticlePaginationResult'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取用户收藏的文章
+      tags:
+      - ArticleAPI
+  /api/blog/articles/history:
+    get:
+      parameters:
+      - default: 1
+        description: 页数
+        in: query
+        minimum: 1
+        name: page
+        type: integer
+      - default: 10
+        description: 页容量
+        in: query
+        maximum: 100
+        minimum: 1
+        name: page_size
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ResponseResult'
+            - properties:
+                data:
+                  $ref: '#/definitions/schema.ArticlePaginationResult'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取用户浏览历史
+      tags:
+      - ArticleAPI
+  /api/blog/articles/hot:
+    get:
+      parameters:
+      - default: 5
+        description: 限制数量
+        in: query
+        name: limit
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ResponseResult'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/schema.ArticleListItem'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+      summary: 获取热门文章
+      tags:
+      - ArticleAPI
+  /api/blog/articles/latest:
+    get:
+      parameters:
+      - default: 5
+        description: 限制数量
+        in: query
+        name: limit
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ResponseResult'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/schema.ArticleListItem'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+      summary: 获取最新文章
+      tags:
+      - ArticleAPI
+  /api/blog/articles/liked:
+    get:
+      parameters:
+      - default: 1
+        description: 页数
+        in: query
+        minimum: 1
+        name: page
+        type: integer
+      - default: 10
+        description: 页容量
+        in: query
+        maximum: 100
+        minimum: 1
+        name: page_size
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ResponseResult'
+            - properties:
+                data:
+                  $ref: '#/definitions/schema.ArticlePaginationResult'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取用户点赞的文章
+      tags:
+      - ArticleAPI
+  /api/blog/articles/upload-cover:
+    post:
+      consumes:
+      - multipart/form-data
+      parameters:
+      - description: 文章封面图片
+        in: formData
+        name: cover
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ResponseResult'
+            - properties:
+                data:
+                  additionalProperties:
+                    allOf:
+                    - type: string
+                    - properties:
+                        url:
+                          type: string
+                      type: object
+                  type: object
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+      security:
+      - ApiKeyAuth: []
+      summary: 上传文章封面
+      tags:
+      - ArticleAPI
+  /api/blog/categories:
+    get:
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ResponseResult'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/schema.CategoryResponse'
+                  type: array
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+      summary: 获取所有分类
+      tags:
+      - CategoryAPI
+    post:
+      parameters:
+      - description: 分类名称
+        in: body
+        name: name
+        required: true
+        schema:
+          type: string
+      - description: 分类描述
+        in: body
+        name: description
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ResponseResult'
+            - properties:
+                data:
+                  $ref: '#/definitions/schema.CategoryResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+      security:
+      - ApiKeyAuth: []
+      summary: 创建分类
+      tags:
+      - CategoryAPI
+  /api/blog/categories/{id}:
+    delete:
+      parameters:
+      - description: 分类ID
+        in: path
+        minimum: 1
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+      security:
+      - ApiKeyAuth: []
+      summary: 删除分类
+      tags:
+      - CategoryAPI
+    get:
+      parameters:
+      - description: 分类ID
+        in: path
+        minimum: 1
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ResponseResult'
+            - properties:
+                data:
+                  $ref: '#/definitions/schema.CategoryResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+      summary: 获取分类详情
+      tags:
+      - CategoryAPI
+    put:
+      parameters:
+      - description: 分类ID
+        in: path
+        minimum: 1
+        name: id
+        required: true
+        type: integer
+      - description: 分类名称
+        in: body
+        name: name
+        schema:
+          type: string
+      - description: 分类描述
+        in: body
+        name: description
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ResponseResult'
+            - properties:
+                data:
+                  $ref: '#/definitions/schema.CategoryResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+      security:
+      - ApiKeyAuth: []
+      summary: 更新分类
+      tags:
+      - CategoryAPI
+  /api/blog/categories/paginate:
+    get:
+      parameters:
+      - default: 1
+        description: 页码
+        in: query
+        minimum: 1
+        name: page
+        type: integer
+      - default: 10
+        description: 每页容量
+        in: query
+        maximum: 100
+        minimum: 1
+        name: page_size
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ResponseResult'
+            - properties:
+                data:
+                  $ref: '#/definitions/schema.CategoryPaginationResult'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+      summary: 获取分类列表（带分页）
+      tags:
+      - CategoryAPI
+  /api/blog/tags:
+    get:
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ResponseResult'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/schema.TagResponse'
+                  type: array
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+      summary: 获取所有标签
+      tags:
+      - TagAPI
+    post:
+      parameters:
+      - description: 标签名称
+        in: body
+        name: name
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ResponseResult'
+            - properties:
+                data:
+                  $ref: '#/definitions/schema.TagResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+      security:
+      - ApiKeyAuth: []
+      summary: 创建标签
+      tags:
+      - TagAPI
+  /api/blog/tags/{id}:
+    delete:
+      parameters:
+      - description: 标签ID
+        in: path
+        minimum: 1
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+      security:
+      - ApiKeyAuth: []
+      summary: 删除标签
+      tags:
+      - TagAPI
+    get:
+      parameters:
+      - description: 标签ID
+        in: path
+        minimum: 1
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ResponseResult'
+            - properties:
+                data:
+                  $ref: '#/definitions/schema.TagResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+      summary: 获取标签详情
+      tags:
+      - TagAPI
+    put:
+      parameters:
+      - description: 标签ID
+        in: path
+        minimum: 1
+        name: id
+        required: true
+        type: integer
+      - description: 标签名称
+        in: body
+        name: name
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ResponseResult'
+            - properties:
+                data:
+                  $ref: '#/definitions/schema.TagResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+      security:
+      - ApiKeyAuth: []
+      summary: 更新标签
+      tags:
+      - TagAPI
+  /api/blog/tags/hot:
+    get:
+      parameters:
+      - default: 10
+        description: 限制
+        in: query
+        maximum: 50
+        minimum: 1
+        name: limit
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ResponseResult'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/schema.TagResponse'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+      summary: 获取热门标签
+      tags:
+      - TagAPI
+  /api/blog/tags/paginate:
+    get:
+      parameters:
+      - default: 1
+        description: 页码
+        in: query
+        minimum: 1
+        name: page
+        type: integer
+      - default: 10
+        description: 每页容量
+        in: query
+        maximum: 100
+        minimum: 1
+        name: page_size
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ResponseResult'
+            - properties:
+                data:
+                  $ref: '#/definitions/schema.TagPaginationResult'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+      summary: 获取标签列表（带分页）
+      tags:
+      - TagAPI
+  /api/comment:
+    post:
+      parameters:
+      - description: 文章ID
+        in: body
+        minimum: 1
+        name: article_id
+        required: true
+        schema:
+          type: integer
+      - description: 评论内容
+        in: body
+        name: content
+        required: true
+        schema:
+          type: string
+      - description: 父评论ID
+        in: body
+        minimum: 1
+        name: parent_id
+        schema:
+          type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ResponseResult'
+            - properties:
+                data:
+                  $ref: '#/definitions/schema.CommentResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+      security:
+      - ApiKeyAuth: []
+      summary: 创建评论
+      tags:
+      - CommentAPI
+  /api/comment/{id}:
+    delete:
+      parameters:
+      - description: 评论ID
+        in: path
+        minimum: 1
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+      security:
+      - ApiKeyAuth: []
+      summary: 删除评论
+      tags:
+      - CommentAPI
+    get:
+      parameters:
+      - description: 评论ID
+        in: path
+        minimum: 1
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ResponseResult'
+            - properties:
+                data:
+                  $ref: '#/definitions/schema.CommentResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+      summary: 获取评论详情
+      tags:
+      - CommentAPI
+  /api/comment/{id}/replies:
+    get:
+      parameters:
+      - description: 评论ID
+        in: path
+        minimum: 1
+        name: id
+        required: true
+        type: integer
+      - default: 1
+        description: 页码
+        in: query
+        minimum: 1
+        name: page
+        type: integer
+      - default: 10
+        description: 页容量
+        in: query
+        maximum: 30
+        minimum: 1
+        name: page_size
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ResponseResult'
+            - properties:
+                data:
+                  $ref: '#/definitions/schema.CommentPaginationResult'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+      summary: 获取评论的回复
+      tags:
+      - CommentAPI
+  /api/comment/article/{article_id}:
+    get:
+      parameters:
+      - description: 文章ID
+        in: path
+        minimum: 1
+        name: articleId
+        required: true
+        type: integer
+      - default: 1
+        description: 页码
+        in: query
+        minimum: 1
+        name: page
+        type: integer
+      - default: 10
+        description: 页容量
+        in: query
+        maximum: 30
+        minimum: 1
+        name: page_size
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ResponseResult'
+            - properties:
+                data:
+                  $ref: '#/definitions/schema.CommentPaginationResult'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+      summary: 获取文章评论
+      tags:
+      - CommentAPI
+  /api/comment/user:
+    get:
+      parameters:
+      - default: 1
+        description: 页码
+        in: query
+        minimum: 1
+        name: page
+        type: integer
+      - default: 10
+        description: 页容量
+        in: query
+        maximum: 30
+        minimum: 1
+        name: page_size
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ResponseResult'
+            - properties:
+                data:
+                  $ref: '#/definitions/schema.CommentPaginationResult'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取用户的评论
+      tags:
+      - CommentAPI
+  /api/stat/activity:
+    get:
+      parameters:
+      - default: 7
+        description: 天数
+        in: query
+        minimum: 1
+        name: days
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ResponseResult'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/schema.UserActivityTrendItem'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取用户活跃度数据
+      tags:
+      - StatAPI
+  /api/stat/articles:
+    get:
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ResponseResult'
+            - properties:
+                data:
+                  $ref: '#/definitions/schema.ArticleStatisticResponse'
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: 获取文章统计信息
+      tags:
+      - StatAPI
+  /api/stat/categories:
+    get:
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ResponseResult'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/schema.CategoryDistItem'
+                  type: array
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+      summary: 获取文章分类分布
+      tags:
+      - StatAPI
+  /api/stat/logger:
+    get:
+      parameters:
+      - default: 1
+        description: 页码
+        in: query
+        minimum: 1
+        name: page
+        type: integer
+      - default: 10
+        description: 每页容量
+        in: query
+        maximum: 30
+        minimum: 1
+        name: page_size
+        type: integer
+      - description: 日志级别
+        in: query
+        name: level
+        type: string
+      - description: 追踪ID
+        in: query
+        name: trace_id
+        type: string
+      - description: 用户名关键词
+        in: query
+        name: username
+        type: string
+      - description: 日志标签
+        in: query
+        name: tag
+        type: string
+      - description: 日志消息关键词
+        in: query
+        name: message
+        type: string
+      - description: 开始时间
+        in: query
+        name: start_time
+        type: string
+      - description: 结束时间
+        in: query
+        name: end_time
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ResponseResult'
+            - properties:
+                data:
+                  $ref: '#/definitions/schema.LoggerPaginationResult'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取日志列表
+      tags:
+      - StatAPI
+  /api/stat/visits:
+    get:
+      parameters:
+      - default: 7
+        description: 天数
+        in: query
+        minimum: 1
+        name: days
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ResponseResult'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/schema.APIAccessTrendItem'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取访问趋势数据
+      tags:
+      - StatAPI
+securityDefinitions:
+  ApiKeyAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

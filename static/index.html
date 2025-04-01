@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GoInk Blog 后端服务</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f7f9fc;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        header {
+            text-align: center;
+            margin-bottom: 50px;
+        }
+        .logo {
+            font-size: 3rem;
+            font-weight: bold;
+            color: #3498db;
+            margin-bottom: 10px;
+        }
+        .tagline {
+            font-size: 1.2rem;
+            color: #7f8c8d;
+        }
+        .content {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 30px;
+            justify-content: center;
+        }
+        .card {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            padding: 30px;
+            flex: 1;
+            min-width: 300px;
+            max-width: 500px;
+            transition: transform 0.3s ease;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        .card h2 {
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+            color: #2c3e50;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
+        .card p {
+            margin-bottom: 20px;
+            color: #555;
+        }
+        .btn {
+            display: inline-block;
+            background-color: #3498db;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 4px;
+            text-decoration: none;
+            font-weight: bold;
+            transition: background-color 0.3s;
+        }
+        .btn:hover {
+            background-color: #2980b9;
+        }
+        .status {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 4px;
+            text-align: center;
+        }
+        .status.online {
+            background-color: #e8f5e9;
+            color: #388e3c;
+        }
+        .status.offline {
+            background-color: #ffebee;
+            color: #d32f2f;
+        }
+        footer {
+            text-align: center;
+            margin-top: 60px;
+            color: #7f8c8d;
+            font-size: 0.9rem;
+        }
+        .feature-list {
+            margin-bottom: 20px;
+        }
+        .feature-list li {
+            margin-bottom: 8px;
+            list-style-type: none;
+            position: relative;
+            padding-left: 25px;
+        }
+        .feature-list li:before {
+            content: "✓";
+            color: #3498db;
+            position: absolute;
+            left: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">GoInk Blog</div>
+            <div class="tagline">专业高效的博客后端服务</div>
+        </header>
+
+        <div class="content">
+            <div class="card">
+                <h2>API 服务</h2>
+                <p>GoInk Blog 提供了丰富的 RESTful API，支持博客系统的全部功能。</p>
+                <ul class="feature-list">
+                    <li>用户认证与授权</li>
+                    <li>文章管理</li>
+                    <li>评论系统</li>
+                    <li>分类与标签</li>
+                    <li>搜索功能</li>
+                </ul>
+                <a href="/swagger/index.html" class="btn">查看 API 文档</a>
+                <div class="status" id="api-status">检测API状态中...</div>
+            </div>
+
+            <div class="card">
+                <h2>开发者资源</h2>
+                <p>我们为开发者提供了全面的技术支持和文档。</p>
+                <ul class="feature-list">
+                    <li>详细的 API 文档</li>
+                    <li>OpenAPI 规范</li>
+                    <li>示例代码</li>
+                    <li>集成指南</li>
+                </ul>
+                <a href="/openapi/swagger.json" class="btn">下载 OpenAPI 规范</a>
+                <a href="/health" class="btn" style="margin-top: 10px; background-color: #2ecc71;">健康检查</a>
+            </div>
+        </div>
+
+        <footer>
+            <p>&copy; 2025 GoInk Blog 后端服务 | 基于 Golang 和 Gin 框架构建</p>
+        </footer>
+    </div>
+
+    <script>
+        // 检测 API 健康状态
+        fetch('/health')
+            .then(response => {
+                const statusDiv = document.getElementById('api-status');
+                if (response.ok) {
+                    statusDiv.innerText = '服务正常运行中';
+                    statusDiv.className = 'status online';
+                } else {
+                    statusDiv.innerText = '服务异常';
+                    statusDiv.className = 'status offline';
+                }
+            })
+            .catch(error => {
+                const statusDiv = document.getElementById('api-status');
+                statusDiv.innerText = '无法连接到服务';
+                statusDiv.className = 'status offline';
+            });
+    </script>
+</body>
+</html>

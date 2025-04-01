@@ -122,7 +122,7 @@ goinkblog-backend/
 - Go 1.21+ (开发使用 1.23.6)
 - MySQL 8.0+
 - Redis 6.0+
-- 支持本地LLM模型（如Ollama）用于AI增强功能
+- 支持 Ollama 本地LLM模型用于AI增强功能
 
 ### 开发工具
 
@@ -216,15 +216,15 @@ make build
 
 ## AI功能配置
 
-GoInk Blog 目前支持本地（Ollama）和 OpenAI 两种AI模型提供商，可在配置文件中设置：
+GoInk Blog 目前支持 local（本地 Ollama）和 openai 两种AI模型提供商，可在配置文件中设置：
 
 ```json
 "ai": {
-  "provider": "local",        // 提供商类型：local、openai
-  "api_key": "",              // API密钥（如有需要）
-  "endpoint": "http://localhost:11434/api/generate", // API端点
-  "model": "gemma3:12b",      // 使用的模型名称
-  "temperature": 0.7          // 生成温度（创造性）
+  "provider": "local",
+  "api_key": "",
+  "endpoint": "http://localhost:11434/api/generate",
+  "model": "gemma3:12b",
+  "temperature": 0.7
 }
 ```
 

@@ -14,7 +14,7 @@ type AIResponse struct {
 
 // AIConfig AI 配置
 type AIConfig struct {
-	Provider    string  `json:"provider"` // openai, local, etc.
+	Provider    string  `json:"provider"` // openai, local
 	APIKey      string  `json:"api_key"`
 	Endpoint    string  `json:"endpoint"`
 	Model       string  `json:"model"`

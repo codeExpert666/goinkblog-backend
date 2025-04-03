@@ -3948,7 +3948,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "provider": {
-                    "description": "openai, local, etc.",
+                    "description": "openai, local",
                     "type": "string"
                 },
                 "temperature": {

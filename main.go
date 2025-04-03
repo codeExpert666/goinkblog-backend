@@ -17,7 +17,7 @@ var VERSION = "v1.0.0"
 // @in header
 // @name Authorization
 // @schemes http https
-// @basePath /api/v1
+// @basePath /
 func main() {
 	app := cli.NewApp()
 	app.Name = "goinkblog"

@@ -114,7 +114,7 @@ func (h *TagHandler) CreateTag(c *gin.Context) {
 
 // @Tags TagAPI
 // @Security ApiKeyAuth
-// @Summary 更新标签
+// @Summary 更新标签（仅管理员可用）
 // @Param id path uint true "标签ID" minimum(1)
 // @Param name body string true "标签名称"
 // @Success 200 {object} util.ResponseResult{data=schema.TagResponse}
@@ -148,7 +148,7 @@ func (h *TagHandler) UpdateTag(c *gin.Context) {
 
 // @Tags TagAPI
 // @Security ApiKeyAuth
-// @Summary 删除标签
+// @Summary 删除标签（仅管理员可用）
 // @Param id path uint true "标签ID" minimum(1)
 // @Success 200 {object} util.ResponseResult
 // @Failure 400 {object} util.ResponseResult

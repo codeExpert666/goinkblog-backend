@@ -25,7 +25,7 @@ const docTemplate = `{
                 "tags": [
                     "AIAPI"
                 ],
-                "summary": "获取 AI 配置",
+                "summary": "获取 AI 配置（仅管理员可用）",
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -56,7 +56,7 @@ const docTemplate = `{
                 "tags": [
                     "AIAPI"
                 ],
-                "summary": "更新 AI 配置",
+                "summary": "更新 AI 配置（仅管理员可用）",
                 "parameters": [
                     {
                         "description": "AI 提供商",
@@ -760,7 +760,7 @@ const docTemplate = `{
                 "tags": [
                     "RBACAPI"
                 ],
-                "summary": "权限验证测试",
+                "summary": "权限验证测试（仅管理员可用）",
                 "parameters": [
                     {
                         "description": "主体(用户或角色)",
@@ -834,7 +834,7 @@ const docTemplate = `{
                 "tags": [
                     "RBACAPI"
                 ],
-                "summary": "获取策略列表",
+                "summary": "获取策略列表（仅管理员可用）",
                 "parameters": [
                     {
                         "minimum": 1,
@@ -926,7 +926,7 @@ const docTemplate = `{
                 "tags": [
                     "RBACAPI"
                 ],
-                "summary": "添加策略",
+                "summary": "添加策略（仅管理员可用）",
                 "parameters": [
                     {
                         "description": "主体(用户或角色)",
@@ -992,7 +992,7 @@ const docTemplate = `{
                 "tags": [
                     "RBACAPI"
                 ],
-                "summary": "移除策略",
+                "summary": "移除策略（仅管理员可用）",
                 "parameters": [
                     {
                         "description": "主体(用户或角色)",
@@ -1060,7 +1060,7 @@ const docTemplate = `{
                 "tags": [
                     "RBACAPI"
                 ],
-                "summary": "重新加载策略",
+                "summary": "重新加载策略（仅管理员可用）",
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -1087,7 +1087,7 @@ const docTemplate = `{
                 "tags": [
                     "RBACAPI"
                 ],
-                "summary": "为用户添加角色",
+                "summary": "为用户添加角色（仅管理员可用）",
                 "parameters": [
                     {
                         "description": "角色",
@@ -1144,7 +1144,7 @@ const docTemplate = `{
                 "tags": [
                     "RBACAPI"
                 ],
-                "summary": "为用户移除角色",
+                "summary": "为用户移除角色（仅管理员可用）",
                 "parameters": [
                     {
                         "description": "角色",
@@ -1203,7 +1203,7 @@ const docTemplate = `{
                 "tags": [
                     "RBACAPI"
                 ],
-                "summary": "获取具有指定角色的所有用户",
+                "summary": "获取具有指定角色的所有用户（仅管理员可用）",
                 "parameters": [
                     {
                         "type": "string",
@@ -1278,7 +1278,7 @@ const docTemplate = `{
                 "tags": [
                     "RBACAPI"
                 ],
-                "summary": "获取所有角色",
+                "summary": "获取所有角色（仅管理员可用）",
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -1338,7 +1338,7 @@ const docTemplate = `{
                 "tags": [
                     "RBACAPI"
                 ],
-                "summary": "获取用户的所有角色",
+                "summary": "获取用户的所有角色（仅管理员可用）",
                 "parameters": [
                     {
                         "type": "string",
@@ -2569,7 +2569,7 @@ const docTemplate = `{
                 "tags": [
                     "CategoryAPI"
                 ],
-                "summary": "创建分类",
+                "summary": "创建分类（仅管理员可用）",
                 "parameters": [
                     {
                         "description": "分类名称",
@@ -2752,7 +2752,7 @@ const docTemplate = `{
                 "tags": [
                     "CategoryAPI"
                 ],
-                "summary": "更新分类",
+                "summary": "更新分类（仅管理员可用）",
                 "parameters": [
                     {
                         "minimum": 1,
@@ -2827,7 +2827,7 @@ const docTemplate = `{
                 "tags": [
                     "CategoryAPI"
                 ],
-                "summary": "删除分类",
+                "summary": "删除分类（仅管理员可用）",
                 "parameters": [
                     {
                         "minimum": 1,
@@ -3134,7 +3134,7 @@ const docTemplate = `{
                 "tags": [
                     "TagAPI"
                 ],
-                "summary": "更新标签",
+                "summary": "更新标签（仅管理员可用）",
                 "parameters": [
                     {
                         "minimum": 1,
@@ -3208,7 +3208,7 @@ const docTemplate = `{
                 "tags": [
                     "TagAPI"
                 ],
-                "summary": "删除标签",
+                "summary": "删除标签（仅管理员可用）",
                 "parameters": [
                     {
                         "minimum": 1,
@@ -3645,7 +3645,7 @@ const docTemplate = `{
                 "tags": [
                     "StatAPI"
                 ],
-                "summary": "获取用户活跃度数据",
+                "summary": "获取用户活跃度数据（仅管理员可用）",
                 "parameters": [
                     {
                         "minimum": 1,
@@ -3703,7 +3703,7 @@ const docTemplate = `{
                 "tags": [
                     "StatAPI"
                 ],
-                "summary": "获取文章统计信息",
+                "summary": "获取文章统计信息（仅管理员可用）",
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -3773,7 +3773,7 @@ const docTemplate = `{
                 "tags": [
                     "StatAPI"
                 ],
-                "summary": "获取日志列表",
+                "summary": "获取日志列表（仅管理员可用）",
                 "parameters": [
                     {
                         "minimum": 1,
@@ -3885,7 +3885,7 @@ const docTemplate = `{
                 "tags": [
                     "StatAPI"
                 ],
-                "summary": "获取访问趋势数据",
+                "summary": "获取访问趋势数据（仅管理员可用）",
                 "parameters": [
                     {
                         "minimum": 1,

@@ -18,7 +18,7 @@ type StatHandler struct {
 
 // @Tags StatAPI
 // @Security ApiKeyAuth
-// @Summary 获取文章统计信息
+// @Summary 获取文章统计信息（仅管理员可用）
 // @Success 200 {object} util.ResponseResult{data=schema.ArticleStatisticResponse}
 // @Router /api/stat/articles [get]
 func (h *StatHandler) GetArticleStatistic(c *gin.Context) {
@@ -30,7 +30,7 @@ func (h *StatHandler) GetArticleStatistic(c *gin.Context) {
 
 // @Tags StatAPI
 // @Security ApiKeyAuth
-// @Summary 获取访问趋势数据
+// @Summary 获取访问趋势数据（仅管理员可用）
 // @Param days query int false "天数" minimum(1) default(7)
 // @Success 200 {object} util.ResponseResult{data=[]schema.APIAccessTrendItem}
 // @Failure 400 {object} util.ResponseResult
@@ -55,7 +55,7 @@ func (h *StatHandler) GetVisitTrend(c *gin.Context) {
 
 // @Tags StatAPI
 // @Security ApiKeyAuth
-// @Summary 获取用户活跃度数据
+// @Summary 获取用户活跃度数据（仅管理员可用）
 // @Param days query int false "天数" minimum(1) default(7)
 // @Success 200 {object} util.ResponseResult{data=[]schema.UserActivityTrendItem}
 // @Failure 400 {object} util.ResponseResult
@@ -96,7 +96,7 @@ func (h *StatHandler) GetCategoryDistribution(c *gin.Context) {
 
 // @Tags StatAPI
 // @Security ApiKeyAuth
-// @Summary 获取日志列表
+// @Summary 获取日志列表（仅管理员可用）
 // @Param page query int false "页码" minimum(1) default(1)
 // @Param page_size query int false "每页容量" minimum(1) maximum(30) default(10)
 // @Param level query string false "日志级别"

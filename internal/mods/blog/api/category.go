@@ -87,7 +87,7 @@ func (h *CategoryHandler) GetCategory(c *gin.Context) {
 
 // @Tags CategoryAPI
 // @Security ApiKeyAuth
-// @Summary 创建分类
+// @Summary 创建分类（仅管理员可用）
 // @Param name body string true "分类名称"
 // @Param description body string false "分类描述"
 // @Success 200 {object} util.ResponseResult{data=schema.CategoryResponse}
@@ -114,7 +114,7 @@ func (h *CategoryHandler) CreateCategory(c *gin.Context) {
 
 // @Tags CategoryAPI
 // @Security ApiKeyAuth
-// @Summary 更新分类
+// @Summary 更新分类（仅管理员可用）
 // @Param id path uint true "分类ID" minimum(1)
 // @Param name body string false "分类名称"
 // @Param description body string false "分类描述"
@@ -148,7 +148,7 @@ func (h *CategoryHandler) UpdateCategory(c *gin.Context) {
 
 // @Tags CategoryAPI
 // @Security ApiKeyAuth
-// @Summary 删除分类
+// @Summary 删除分类（仅管理员可用）
 // @Param id path uint true "分类ID" minimum(1)
 // @Success 200 {object} util.ResponseResult
 // @Failure 400 {object} util.ResponseResult

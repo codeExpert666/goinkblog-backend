@@ -91,7 +91,7 @@ func (h *AIHandler) RecommendTags(c *gin.Context) {
 
 // @Tags AIAPI
 // @Security ApiKeyAuth
-// @Summary 获取 AI 配置
+// @Summary 获取 AI 配置（仅管理员可用）
 // @Success 200 {object} util.ResponseResult{data=schema.AIConfig}
 // @Router /api/ai/config [get]
 func (h *AIHandler) GetConfig(c *gin.Context) {
@@ -103,7 +103,7 @@ func (h *AIHandler) GetConfig(c *gin.Context) {
 
 // @Tags AIAPI
 // @Security ApiKeyAuth
-// @Summary 更新 AI 配置
+// @Summary 更新 AI 配置（仅管理员可用）
 // @Param provider body string false "AI 提供商" enum("openai", "local")
 // @Param api_key body string false "AI API 密钥"
 // @Param endpoint body string false "AI API 端点"

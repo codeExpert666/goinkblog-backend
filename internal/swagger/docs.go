@@ -391,22 +391,7 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "type": "object",
-                                            "additionalProperties": {
-                                                "allOf": [
-                                                    {
-                                                        "type": "string"
-                                                    },
-                                                    {
-                                                        "type": "object",
-                                                        "properties": {
-                                                            "url": {
-                                                                "type": "string"
-                                                            }
-                                                        }
-                                                    }
-                                                ]
-                                            }
+                                            "$ref": "#/definitions/schema.AvatarResponse"
                                         }
                                     }
                                 }
@@ -4168,6 +4153,14 @@ const docTemplate = `{
                 },
                 "totalViews": {
                     "type": "integer"
+                }
+            }
+        },
+        "schema.AvatarResponse": {
+            "type": "object",
+            "properties": {
+                "url": {
+                    "type": "string"
                 }
             }
         },

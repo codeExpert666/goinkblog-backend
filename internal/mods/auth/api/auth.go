@@ -175,18 +175,16 @@ func (h *AuthHandler) UpdateProfile(c *gin.Context) {
 // @Accept multipart/form-data
 // @Produce json
 // @Param avatar formData file true "头像图片文件"
-// @Success 200 {object} util.ResponseResult{data=map[string]string{url=string}}
+// @Success 200 {object} util.ResponseResult{data=schema.AvatarResponse}
 // @Failure 400 {object} util.ResponseResult
 // @Failure 500 {object} util.ResponseResult
 // @Router /api/auth/avatar [post]
 func (h *AuthHandler) UploadAvatar(c *gin.Context) {
-	avatarURL, err := h.AuthService.UploadAvatar(c)
+	data, err := h.AuthService.UploadAvatar(c)
 	if err != nil {
 		util.ResError(c, err)
 		return
 	}
 
-	util.ResSuccess(c, gin.H{
-		"url": avatarURL,
-	})
+	util.ResSuccess(c, data)
 }

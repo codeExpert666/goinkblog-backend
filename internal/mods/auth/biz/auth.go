@@ -342,22 +342,22 @@ func (s *AuthService) UpdateProfile(ctx context.Context, req *schema.UpdateProfi
 }
 
 // UploadAvatar 上传头像
-func (s *AuthService) UploadAvatar(c *gin.Context) (string, error) {
+func (s *AuthService) UploadAvatar(c *gin.Context) (*schema.AvatarResponse, error) {
 	ctx := c.Request.Context()
 
 	if util.FromIsAdminUser(ctx) {
-		return "", errors.BadRequest("管理员资料不允许更新")
+		return nil, errors.BadRequest("管理员资料不允许更新")
 	}
 
 	// 获取头像文件
 	file, err := c.FormFile("avatar")
 	if err != nil {
-		return "", errors.BadRequest("获取图片文件失败: %s", err.Error())
+		return nil, errors.BadRequest("获取图片文件失败: %s", err.Error())
 	}
 
 	// 验证文件类型
 	if !util.IsImageFile(file.Filename) {
-		return "", errors.BadRequest("支持的文件格式为: %s", config.SupportedImageFormats)
+		return nil, errors.BadRequest("支持的文件格式为: %s", config.SupportedImageFormats)
 	}
 
 	// 生成唯一文件名
@@ -371,11 +371,13 @@ func (s *AuthService) UploadAvatar(c *gin.Context) (string, error) {
 	// 保存文件
 	if err := c.SaveUploadedFile(file, dst); err != nil {
 		logging.Context(ctx).Error("保存图片文件失败", zap.String("filePath", dst), zap.Int64("fileSize", file.Size), zap.Error(err))
-		return "", errors.InternalServerError("保存图片文件失败: %s", err.Error())
+		return nil, errors.InternalServerError("保存图片文件失败: %s", err.Error())
 	}
 	logging.Context(ctx).Info("保存图片文件成功", zap.String("filePath", dst), zap.Int64("fileSize", file.Size))
 
-	return avatarURL, nil
+	return &schema.AvatarResponse{
+		URL: avatarURL,
+	}, nil
 }
 
 // Logout 处理用户登出请求

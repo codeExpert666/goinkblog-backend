@@ -156,6 +156,11 @@ definitions:
       totalViews:
         type: integer
     type: object
+  schema.AvatarResponse:
+    properties:
+      url:
+        type: string
+    type: object
   schema.Captcha:
     properties:
       captcha_id:
@@ -640,14 +645,7 @@ paths:
             - $ref: '#/definitions/util.ResponseResult'
             - properties:
                 data:
-                  additionalProperties:
-                    allOf:
-                    - type: string
-                    - properties:
-                        url:
-                          type: string
-                      type: object
-                  type: object
+                  $ref: '#/definitions/schema.AvatarResponse'
               type: object
         "400":
           description: Bad Request

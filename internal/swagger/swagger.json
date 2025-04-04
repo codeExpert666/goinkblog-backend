@@ -383,22 +383,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "type": "object",
-                                            "additionalProperties": {
-                                                "allOf": [
-                                                    {
-                                                        "type": "string"
-                                                    },
-                                                    {
-                                                        "type": "object",
-                                                        "properties": {
-                                                            "url": {
-                                                                "type": "string"
-                                                            }
-                                                        }
-                                                    }
-                                                ]
-                                            }
+                                            "$ref": "#/definitions/schema.AvatarResponse"
                                         }
                                     }
                                 }
@@ -4160,6 +4145,14 @@
                 },
                 "totalViews": {
                     "type": "integer"
+                }
+            }
+        },
+        "schema.AvatarResponse": {
+            "type": "object",
+            "properties": {
+                "url": {
+                    "type": "string"
                 }
             }
         },

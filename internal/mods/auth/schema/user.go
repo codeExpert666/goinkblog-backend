@@ -77,3 +77,8 @@ type UpdateProfileRequest struct {
 type Captcha struct {
 	CaptchaID string `json:"captcha_id"`
 }
+
+// AvatarResponse 头像上传响应
+type AvatarResponse struct {
+	URL string `json:"url"`
+}

@@ -33,7 +33,7 @@ func ResOK(c *gin.Context) {
 // ResSuccess 响应成功
 func ResSuccess(c *gin.Context, data interface{}) {
 	result := &ResponseResult{
-		Code: 0,
+		Code: 200,
 		Data: data,
 	}
 

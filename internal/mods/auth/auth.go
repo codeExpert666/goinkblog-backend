@@ -2,8 +2,6 @@ package auth
 
 import (
 	"context"
-	"path/filepath"
-
 	"github.com/gin-gonic/gin"
 	"github.com/google/wire"
 	"go.uber.org/zap"
@@ -39,6 +37,7 @@ var Set = wire.NewSet(
 	wire.Struct(new(api.CasbinHandler), "*"),
 	wire.Struct(new(biz.CasbinService), "*"),
 	wire.Struct(new(dal.CasbinRepository), "*"),
+	wire.Struct(new(biz.Casbinx), "*"),
 )
 
 // AutoMigrate 自动迁移数据库表结构
@@ -80,18 +79,8 @@ func (a *Auth) Init(ctx context.Context) error {
 		return err
 	}
 
-	// 将 rbac_policy.csv 中的策略导入到数据库
-	if path := config.C.Middleware.Casbin.PolicyFile; path != "" {
-		policyFile := filepath.Join(config.C.General.WorkDir, path)
-		err = a.CasbinHandler.CasbinService.ImportPolicyFromFile(ctx, policyFile)
-		if err != nil {
-			logging.Context(ctx).Error("导入 Casbin 策略到数据库失败", zap.Error(err))
-			return err
-		}
-	}
-
 	// 初始化 Casbin 执行器
-	err = a.CasbinHandler.CasbinService.SetEnforcer(ctx)
+	err = a.CasbinHandler.CasbinService.Casbinx.Init(ctx)
 	if err != nil {
 		logging.Context(ctx).Error("初始化 Casbin 执行器失败", zap.Error(err))
 		return err
@@ -122,16 +111,10 @@ func (a *Auth) RegisterRouters(ctx context.Context, auth *gin.RouterGroup) error
 	// RBAC权限管理接口
 	rbac := auth.Group("/rbac")
 	{
-		rbac.GET("/policies", a.CasbinHandler.GetPolicies)
+		rbac.GET("/policies", a.CasbinHandler.ListPolicies)
 		rbac.POST("/policy", a.CasbinHandler.AddPolicy)
-		rbac.DELETE("/policy", a.CasbinHandler.RemovePolicy)
-		rbac.POST("/role", a.CasbinHandler.AddRoleForUser)
-		rbac.DELETE("/role", a.CasbinHandler.RemoveRoleForUser)
+		rbac.DELETE("/policy/:id", a.CasbinHandler.DeletePolicy)
 		rbac.POST("/enforce", a.CasbinHandler.Enforce)
-		rbac.GET("/roles", a.CasbinHandler.GetAllRoles)
-		rbac.GET("/user/:user/roles", a.CasbinHandler.GetRolesForUser)
-		rbac.GET("/role/:role/users", a.CasbinHandler.GetUsersForRole)
-		rbac.POST("/reload", a.CasbinHandler.ReloadPolicy)
 	}
 
 	return nil
@@ -139,5 +122,8 @@ func (a *Auth) RegisterRouters(ctx context.Context, auth *gin.RouterGroup) error
 
 // Release 释放模块资源
 func (a *Auth) Release(ctx context.Context) error {
+	if err := a.CasbinHandler.CasbinService.Casbinx.Release(ctx); err != nil {
+		return err
+	}
 	return nil
 }

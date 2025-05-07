@@ -7,25 +7,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-// 定义错误
-var (
-	ErrBadRequest          = NewErrorWithCode(400, "请求发生错误")
-	ErrUnauthorized        = NewErrorWithCode(401, "未授权")
-	ErrForbidden           = NewErrorWithCode(403, "访问被禁止")
-	ErrNotFound            = NewErrorWithCode(404, "资源不存在")
-	ErrMethodNotAllowed    = NewErrorWithCode(405, "方法不被允许")
-	ErrConflict            = NewErrorWithCode(409, "资源冲突")
-	ErrTooManyRequests     = NewErrorWithCode(429, "请求过于频繁")
-	ErrInternalServerError = NewErrorWithCode(500, "服务器发生错误")
-	ErrBadGateway          = NewErrorWithCode(502, "网关错误")
-	ErrServiceUnavailable  = NewErrorWithCode(503, "服务不可用")
-	ErrGatewayTimeout      = NewErrorWithCode(504, "网关超时")
-	ErrDBServerError       = NewErrorWithCode(600, "数据库服务错误")
-	ErrDBDuplicate         = NewErrorWithCode(601, "数据重复")
-	ErrDBValidation        = NewErrorWithCode(602, "数据验证错误")
-	ErrDBForeignKey        = NewErrorWithCode(603, "外键约束错误")
-)
-
 // Error 定义错误接口
 type Error interface {
 	error
@@ -287,7 +268,7 @@ func Conflict(message string, a ...interface{}) Error {
 // TooManyRequests 请求过于频繁
 func TooManyRequests(message string, a ...interface{}) Error {
 	if message == "" {
-		message = "请求过于频繁"
+		message = "请求过于频繁，请稍后再试"
 	}
 	return &ResponseError{
 		StatusCode: 429,
@@ -304,6 +285,17 @@ func InternalServerError(message string, a ...interface{}) Error {
 	return &ResponseError{
 		StatusCode: 500,
 		ErrorCode:  500,
+		ErrorMsg:   fmt.Sprintf(message, a...),
+	}
+}
+
+func ServiceUnavailableError(message string, a ...interface{}) Error {
+	if message == "" {
+		message = "服务暂时不可用，请稍后再试"
+	}
+	return &ResponseError{
+		StatusCode: 503,
+		ErrorCode:  503,
 		ErrorMsg:   fmt.Sprintf(message, a...),
 	}
 }

@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/codeExpert666/goinkblog-backend/pkg/errors"
+	"github.com/codeExpert666/goinkblog-backend/pkg/json"
 	"github.com/codeExpert666/goinkblog-backend/pkg/logging"
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
@@ -42,8 +43,7 @@ func ResSuccess(c *gin.Context, data interface{}) {
 		result.Data = nil
 	}
 
-	c.JSON(http.StatusOK, result)
-	c.Abort()
+	ResJSON(c, http.StatusOK, result)
 }
 
 // ResPage 响应分页数据
@@ -55,8 +55,7 @@ func ResPage(c *gin.Context, list interface{}, pagination interface{}) {
 			"pagination": pagination,
 		},
 	}
-	c.JSON(http.StatusOK, result)
-	c.Abort()
+	ResJSON(c, http.StatusOK, result)
 }
 
 // ResError 响应错误
@@ -76,7 +75,17 @@ func ResError(c *gin.Context, err error) {
 		logging.Context(ctx).Error("服务器内部错误", zap.Error(err))
 	}
 
-	c.JSON(httpCode, res)
+	ResJSON(c, httpCode, res)
+}
+
+func ResJSON(c *gin.Context, status int, v interface{}) {
+	buf, err := json.Marshal(v)
+	if err != nil {
+		panic(err)
+	}
+
+	c.Set(ResBodyKey, buf)
+	c.Data(status, "application/json; charset=utf-8", buf)
 	c.Abort()
 }
 

@@ -101,18 +101,6 @@ func (r *UserRepository) CheckPassword(ctx context.Context, user *schema.User, p
 	return err == nil
 }
 
-// UpdatePassword 更新密码
-func (r *UserRepository) UpdatePassword(ctx context.Context, userID uint, newPassword string) error {
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
-	if err != nil {
-		return err
-	}
-
-	db := GetUserDB(ctx, r.DB)
-	result := db.Where("id = ?", userID).Update("password", string(hashedPassword))
-	return errors.WithStack(result.Error)
-}
-
 // GetAll 获取所有用户
 func (r *UserRepository) GetAll(ctx context.Context, page, pageSize int) ([]schema.User, int64, error) {
 	db := GetUserDB(ctx, r.DB)

@@ -2,7 +2,7 @@
   "general": {
     "app_name": "goinkblog",
     "version": "v1.0.0",
-    "debug": true,
+    "debug": false,
     "disable_swagger": false,
     "disable_print_config": false,
     "pprof_addr": "",
@@ -11,8 +11,8 @@
       "shutdown_timeout": 30,
       "max_content_length": 67108864,
       "read_timeout": 60,
-      "write_timeout": 60,
-      "idle_timeout": 10,
+      "write_timeout": 0,
+      "idle_timeout": 120,
       "cert_file": "",
       "key_file": ""
     },
@@ -58,11 +58,24 @@
     }
   },
   "ai": {
-    "provider": "local",
-    "api_key": "",
-    "endpoint": "http://localhost:11434/api/generate",
-    "model": "gemma3:12b",
-    "temperature": 0.7
+    "models": [
+      {
+        "provider": "local",
+        "api_key": "ollama",
+        "endpoint": "http://localhost:11434/v1/chat/completions",
+        "model_name": "gemma3:12b",
+        "temperature": 0.7,
+        "timeout": 90,
+        "active": true,
+        "description": "Ollama model",
+        "rpm": 10,
+        "weight": 100
+      }
+    ],
+    "selector": {
+      "load_models_interval": 5,
+      "update_weight_interval": 2
+    }
   },
   "dictionary": {
     "user_cache_exp": 4

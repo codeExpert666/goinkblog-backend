@@ -131,8 +131,8 @@ func (s *TagService) GetAllTags(ctx context.Context) ([]schema.TagResponse, erro
 }
 
 // GetTagList 获取标签列表（带分页）
-func (s *TagService) GetTagList(ctx context.Context, page, pageSize int) (*schema.TagPaginationResult, error) {
-	return s.TagRepository.GetList(ctx, page, pageSize)
+func (s *TagService) GetTagList(ctx context.Context, params *schema.TagQueryParams) (*schema.TagPaginationResult, error) {
+	return s.TagRepository.GetList(ctx, params)
 }
 
 // GetHotTags 获取热门标签

@@ -8,14 +8,14 @@ import (
 
 // User 用户模型
 type User struct {
-	ID        uint      `json:"id" gorm:"primaryKey"`
+	ID        uint      `json:"id" gorm:"index;primaryKey"`
 	Username  string    `json:"username" gorm:"size:50;not null;uniqueIndex;comment:用户名"`
 	Email     string    `json:"email" gorm:"size:100;not null;uniqueIndex;comment:邮箱"`
 	Password  string    `json:"-" gorm:"size:100;not null;comment:密码"`
 	Avatar    string    `json:"avatar" gorm:"size:255;comment:头像URL"`
 	Bio       string    `json:"bio" gorm:"type:text;comment:个人简介"`
 	Role      string    `json:"role" gorm:"size:20;not null;default:user;comment:角色"`
-	CreatedAt time.Time `json:"created_at" gorm:"comment:创建时间"`
+	CreatedAt time.Time `json:"created_at" gorm:"index;comment:创建时间"`
 	UpdatedAt time.Time `json:"updated_at" gorm:"comment:更新时间"`
 }
 

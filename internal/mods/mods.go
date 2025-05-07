@@ -16,7 +16,6 @@ import (
 // API 路由前缀常量
 const (
 	apiPrefix = "/api/"
-	aiPrefix  = "/api/ai/"
 )
 
 // Mods 所有模块的集合
@@ -73,11 +72,6 @@ func (a *Mods) RouterPrefixes() []string {
 	return []string{apiPrefix}
 }
 
-// AIRouterPrefixes AI路由前缀列表
-func (a *Mods) AIRouterPrefixes() []string {
-	return []string{aiPrefix}
-}
-
 // RegisterRouters 注册路由
 func (a *Mods) RegisterRouters(ctx context.Context, e *gin.Engine) error {
 	// 注册API路由
@@ -108,7 +102,7 @@ func (a *Mods) RegisterRouters(ctx context.Context, e *gin.Engine) error {
 	}
 
 	// 注册AI模块路由
-	aiApi := e.Group(aiPrefix)
+	aiApi := gAPI.Group("ai")
 	if err := a.AI.RegisterRouters(ctx, aiApi); err != nil {
 		return err
 	}

@@ -3,368 +3,191 @@ package biz
 import (
 	"bufio"
 	"context"
-	"fmt"
-	"os"
-	"path/filepath"
-	"strings"
-	"sync"
-
-	"go.uber.org/zap"
-
 	"github.com/casbin/casbin/v2"
+	"github.com/casbin/casbin/v2/model"
+	gormadapter "github.com/casbin/gorm-adapter/v3"
+	"github.com/codeExpert666/goinkblog-backend/internal/config"
 	"github.com/codeExpert666/goinkblog-backend/internal/mods/auth/dal"
 	"github.com/codeExpert666/goinkblog-backend/internal/mods/auth/schema"
+	"github.com/codeExpert666/goinkblog-backend/pkg/cachex"
 	"github.com/codeExpert666/goinkblog-backend/pkg/errors"
 	"github.com/codeExpert666/goinkblog-backend/pkg/logging"
-	"github.com/codeExpert666/goinkblog-backend/pkg/util"
+	"go.uber.org/zap"
+	"os"
+	"path/filepath"
+	"strconv"
+	"strings"
+	"sync/atomic"
+	"time"
 )
 
-// CasbinService Casbin业务逻辑层
-type CasbinService struct {
+type Casbinx struct {
+	adapter          *gormadapter.Adapter `wire:"-"` // GORM 适配器
+	model            model.Model          `wire:"-"` // Casbin 模型
+	enforcer         *atomic.Value        `wire:"-"` // Casbin 执行器
+	ticker           *time.Ticker         `wire:"-"` // 定时自动加载策略
+	Cache            cachex.Cacher        // 策略同步通知
 	CasbinRepository *dal.CasbinRepository
-	Trans            *util.Trans
-	Enforcer         *casbin.Enforcer `wire:"-"`
-	Mutex            sync.RWMutex     `wire:"-"`
 }
 
-// SetEnforcer 设置Casbin执行器
-func (s *CasbinService) SetEnforcer(ctx context.Context) error {
-	// 执行器存在则直接返回
-	if s.Enforcer != nil {
-		return nil
+// GetEnforcer 获取当前的 casbin 执行器实例
+func (c *Casbinx) GetEnforcer() *casbin.Enforcer {
+	if v := c.enforcer.Load(); v != nil {
+		return v.(*casbin.Enforcer)
+	}
+	return nil
+}
+
+// Init 初始化Casbin模块
+func (c *Casbinx) Init(ctx context.Context) error {
+	// 将策略配置导入到数据库
+	if path := config.C.Middleware.Casbin.PolicyFile; path != "" {
+		if count, err := c.CasbinRepository.Count(ctx, &schema.CasbinRule{}); err != nil {
+			return err
+		} else if count == 0 { // 只有当数据库中不存在策略时才进行导入
+			policyFile := filepath.Join(config.C.General.WorkDir, path)
+			err = c.importPolicyFromFile(ctx, policyFile)
+			if err != nil {
+				logging.Context(ctx).Error("导入 Casbin 策略到数据库失败", zap.Error(err))
+				return err
+			}
+		} else {
+			logging.Context(ctx).Info("数据库中已存在 Casbin 策略，跳过导入")
+		}
 	}
 
-	// 初始化执行器
-	enforcer, err := s.CasbinRepository.InitCasbinEnforcer(ctx)
+	// 初始化GORM适配器
+	gormadapter.TurnOffAutoMigrate(c.CasbinRepository.DB) // 不允许适配器自动创建表
+	tableName := new(schema.CasbinRule).TableName()
+	adapter, err := gormadapter.NewAdapterByDBWithCustomTable(
+		c.CasbinRepository.DB,
+		&schema.CasbinRule{},
+		tableName,
+	)
 	if err != nil {
+		logging.Context(ctx).Error("创建Casbin GORM适配器失败", zap.Error(err))
+		return err
+	}
+	c.adapter = adapter
+
+	// 从文件加载模型
+	modelPath := filepath.Join(config.C.General.WorkDir, config.C.Middleware.Casbin.ModelFile)
+	m, err := model.NewModelFromFile(modelPath)
+	if err != nil {
+		logging.Context(ctx).Error("从文件加载Casbin模型失败", zap.Error(err))
+		return err
+	}
+	c.model = m
+
+	// 初始化 Casbin 执行器
+	c.enforcer = new(atomic.Value)
+	if err := c.load(ctx); err != nil {
 		return err
 	}
 
-	s.Enforcer = enforcer
-	logging.Context(ctx).Info("Casbin执行器创建成功")
+	// 后台定时检查策略更新并重新加载策略
+	go c.autoLoad(ctx)
 	return nil
 }
 
-// ReloadPolicy 重新加载策略
-func (s *CasbinService) ReloadPolicy(ctx context.Context) error {
-	// 添加写锁
-	s.Mutex.Lock()
-	defer s.Mutex.Unlock()
-
-	if s.Enforcer == nil {
-		return nil
-	}
-
-	if err := s.Enforcer.LoadPolicy(); err != nil {
+func (c *Casbinx) load(ctx context.Context) error {
+	// 创建执行器
+	e, err := casbin.NewEnforcer(c.model, c.adapter)
+	if err != nil {
+		logging.Context(ctx).Error("创建Casbin执行器失败", zap.Error(err))
 		return err
 	}
 
-	logging.Context(ctx).Info("Casbin策略已重新加载")
+	// 加载策略
+	if err := e.LoadPolicy(); err != nil {
+		logging.Context(ctx).Error("加载Casbin策略失败", zap.Error(err))
+		return err
+	}
+
+	c.enforcer.Store(e)
+	logging.Context(ctx).Info("Casbin执行器设置成功")
 	return nil
 }
 
-// GetPolicies 获取策略列表
-func (s *CasbinService) GetPolicies(ctx context.Context, req *schema.PolicyListRequest) (*schema.PolicyListResponse, error) {
-	var policies [][]string
-	var filteredPolicies [][]string
+func (c *Casbinx) autoLoad(ctx context.Context) {
+	// 记录上次更新时间
+	var lastUpdated int64
 
-	// 根据类型获取不同的策略
-	var err error
-	s.Mutex.RLock()
-	if req.Type == "" || req.Type == "p" {
-		policies, err = s.Enforcer.GetPolicy()
-	} else if req.Type == "g" {
-		policies, err = s.Enforcer.GetGroupingPolicy()
-	}
-	s.Mutex.RUnlock()
-	if err != nil {
-		return nil, errors.WithStack(fmt.Errorf("获取Casbin策略失败: %v", err))
-	}
+	c.ticker = time.NewTicker(time.Duration(config.C.Middleware.Casbin.AutoLoadInterval) * time.Second)
+	for range c.ticker.C {
+		// 从缓存中获取同步标记
+		val, ok, err := c.Cache.Get(ctx, config.CacheNSForRole, config.CacheKeyForSyncToCasbin)
+		if err != nil {
+			logging.Context(ctx).Error("从缓存中获取 Casbin 同步标记失败", zap.Error(err), zap.String("key", config.CacheKeyForSyncToCasbin))
+			continue
+		} else if !ok {
+			continue
+		}
 
-	// 过滤策略
-	for _, policy := range policies {
-		if req.Type == "p" && len(policy) >= 3 {
-			// 如果是p类型策略，检查subject、object和action
-			if (req.Subject == "" || strings.Contains(policy[0], req.Subject)) &&
-				(req.Object == "" || strings.Contains(policy[1], req.Object)) &&
-				(req.Action == "" || strings.Contains(policy[2], req.Action)) {
-				filteredPolicies = append(filteredPolicies, policy)
+		// 解析更新时间
+		updated, err := strconv.ParseInt(val, 10, 64)
+		if err != nil {
+			logging.Context(ctx).Error("解析 Casbin 同步标记缓存值失败", zap.Error(err), zap.String("val", val))
+			continue
+		}
+
+		// 如果有更新，重新加载策略
+		if lastUpdated < updated {
+			if err := c.load(ctx); err != nil {
+				logging.Context(ctx).Error("更新 Casbin 执行器失败", zap.Error(err))
+			} else {
+				lastUpdated = updated
 			}
-		} else if req.Type == "g" && len(policy) >= 2 {
-			// 如果是g类型策略，检查user和role
-			if (req.Subject == "" || strings.Contains(policy[0], req.Subject)) &&
-				(req.Object == "" || strings.Contains(policy[1], req.Object)) {
-				filteredPolicies = append(filteredPolicies, policy)
-			}
-		} else if req.Type == "" {
-			// 如果未指定类型，添加所有策略
-			filteredPolicies = append(filteredPolicies, policy)
 		}
 	}
-
-	// 计算分页
-	total := len(filteredPolicies)
-	start := (req.Page - 1) * req.PageSize
-	if start >= total {
-		start = 0
-	}
-	end := start + req.PageSize
-	if end > total {
-		end = total
-	}
-
-	// 构建响应
-	items := make([]schema.PolicyListItem, 0, end-start)
-	for i := start; i < end && i < len(filteredPolicies); i++ {
-		policy := filteredPolicies[i]
-		item := schema.PolicyListItem{
-			ID:      uint(i + 1), // 使用索引作为ID
-			Type:    req.Type,    // 策略类型
-			Subject: "",
-			Object:  "",
-			Action:  "",
-		}
-
-		// 根据策略类型设置字段
-		if req.Type == "p" && len(policy) >= 3 {
-			item.Subject = policy[0]
-			item.Object = policy[1]
-			item.Action = policy[2]
-		} else if req.Type == "g" && len(policy) >= 2 {
-			item.Subject = policy[0]
-			item.Object = policy[1]
-		} else if req.Type == "" && len(policy) >= 3 {
-			// 未指定类型，尝试识别
-			item.Type = "p"
-			item.Subject = policy[0]
-			item.Object = policy[1]
-			item.Action = policy[2]
-		}
-
-		items = append(items, item)
-	}
-
-	return &schema.PolicyListResponse{
-		Total: total,
-		Items: items,
-	}, nil
 }
 
-// AddPolicy 添加策略
-func (s *CasbinService) AddPolicy(ctx context.Context, req *schema.PolicyRequest) error {
-	s.Mutex.Lock()
-
-	// 添加权限策略
-	added, err := s.Enforcer.AddPolicy(req.Subject, req.Object, req.Action)
-	if err != nil {
-		return errors.WithStack(fmt.Errorf("添加Casbin策略失败: %v", err))
+func (c *Casbinx) Release(ctx context.Context) error {
+	if c.ticker != nil {
+		c.ticker.Stop()
 	}
-
-	if !added {
-		return errors.Conflict("策略已存在")
-	}
-
-	// 保存到数据库
-	if err := s.Enforcer.SavePolicy(); err != nil {
-		return errors.WithStack(fmt.Errorf("保存Casbin策略到数据库失败: %v", err))
-	}
-
-	s.Mutex.Unlock()
-
-	logging.Context(ctx).Info("成功添加策略",
-		zap.String("subject", req.Subject),
-		zap.String("object", req.Object),
-		zap.String("action", req.Action))
 	return nil
 }
 
-// RemovePolicy 移除策略
-func (s *CasbinService) RemovePolicy(ctx context.Context, req *schema.PolicyRequest) error {
-	s.Mutex.Lock()
-
-	// 移除权限策略
-	removed, err := s.Enforcer.RemovePolicy(req.Subject, req.Object, req.Action)
-	if err != nil {
-		return errors.WithStack(fmt.Errorf("移除Casbin策略失败: %v", err))
-	}
-
-	if !removed {
-		return errors.NotFound("策略不存在")
-	}
-
-	// 保存到数据库
-	if err := s.Enforcer.SavePolicy(); err != nil {
-		return errors.WithStack(fmt.Errorf("保存Casbin策略到数据库失败: %v", err))
-	}
-
-	s.Mutex.Unlock()
-
-	logging.Context(ctx).Info("成功移除策略",
-		zap.String("subject", req.Subject),
-		zap.String("object", req.Object),
-		zap.String("action", req.Action))
-	return nil
-}
-
-// AddRoleForUser 为用户添加角色
-func (s *CasbinService) AddRoleForUser(ctx context.Context, req *schema.RoleRequest) error {
-	s.Mutex.Lock()
-
-	// 添加角色关系
-	added, err := s.Enforcer.AddGroupingPolicy(req.User, req.Role)
-	if err != nil {
-		return errors.WithStack(fmt.Errorf("为用户添加角色失败: %v", err))
-	}
-
-	if !added {
-		return errors.Conflict("用户角色关系已存在")
-	}
-
-	// 保存到数据库
-	if err := s.Enforcer.SavePolicy(); err != nil {
-		return errors.WithStack(fmt.Errorf("保存Casbin策略到数据库失败: %v", err))
-	}
-
-	s.Mutex.Unlock()
-
-	logging.Context(ctx).Info("成功为用户添加角色",
-		zap.String("user", req.User),
-		zap.String("role", req.Role))
-	return nil
-}
-
-// RemoveRoleForUser 为用户移除角色
-func (s *CasbinService) RemoveRoleForUser(ctx context.Context, req *schema.RoleRequest) error {
-	s.Mutex.Lock()
-
-	// 移除角色关系
-	removed, err := s.Enforcer.RemoveGroupingPolicy(req.User, req.Role)
-	if err != nil {
-		return errors.WithStack(fmt.Errorf("为用户移除角色失败: %v", err))
-	}
-
-	if !removed {
-		return errors.NotFound("用户角色关系不存在")
-	}
-
-	// 保存到数据库
-	if err := s.Enforcer.SavePolicy(); err != nil {
-		return errors.WithStack(fmt.Errorf("保存Casbin策略到数据库失败: %v", err))
-	}
-
-	s.Mutex.Unlock()
-
-	logging.Context(ctx).Info("成功为用户移除角色",
-		zap.String("user", req.User),
-		zap.String("role", req.Role))
-	return nil
-}
-
-// Enforce 执行权限验证
-func (s *CasbinService) Enforce(ctx context.Context, req *schema.EnforcerRequest) (*schema.EnforcerResponse, error) {
-	// 执行权限验证
-	s.Mutex.RLock()
-	allowed, err := s.Enforcer.Enforce(req.Subject, req.Object, req.Action)
-	s.Mutex.RUnlock()
-
-	if err != nil {
-		return nil, errors.WithStack(fmt.Errorf("执行Casbin权限验证失败: %v", err))
-	}
-
-	return &schema.EnforcerResponse{
-		Allowed: allowed,
-	}, nil
-}
-
-// GetAllRoles 获取所有角色
-func (s *CasbinService) GetAllRoles(ctx context.Context) ([]string, error) {
-	s.Mutex.RLock()
-	roles, err := s.Enforcer.GetAllRoles()
-	s.Mutex.RUnlock()
-
-	if err != nil {
-		return nil, errors.WithStack(fmt.Errorf("获取Casbin角色失败: %v", err))
-	}
-	return roles, nil
-}
-
-// GetRolesForUser 获取用户的所有角色
-func (s *CasbinService) GetRolesForUser(ctx context.Context, user string) ([]string, error) {
-	s.Mutex.RLock()
-	roles, err := s.Enforcer.GetRolesForUser(user)
-	s.Mutex.RUnlock()
-
-	if err != nil {
-		return nil, errors.WithStack(fmt.Errorf("获取用户角色失败: %v", err))
-	}
-	return roles, nil
-}
-
-// GetUsersForRole 获取具有指定角色的所有用户
-func (s *CasbinService) GetUsersForRole(ctx context.Context, role string) ([]string, error) {
-	s.Mutex.RLock()
-	users, err := s.Enforcer.GetUsersForRole(role)
-	s.Mutex.RUnlock()
-
-	if err != nil {
-		return nil, errors.WithStack(fmt.Errorf("获取角色用户失败: %v", err))
-	}
-	return users, nil
-}
-
-// MiddlewareEnforce 用于在中间件中方便地执行权限验证
-func (s *CasbinService) MiddlewareEnforce(ctx context.Context, sub, path, method string) (bool, error) {
-	// 添加读锁
-	s.Mutex.RLock()
-	allowed, err := s.Enforcer.Enforce(sub, path, method)
-	s.Mutex.RUnlock()
-
-	if err != nil {
-		logging.Context(ctx).Error("中间件权限验证出错", zap.Error(err))
-		return false, err
-	}
-	return allowed, nil
-}
-
-// ImportPolicyFromFile 从策略文件导入策略到数据库
-func (s *CasbinService) ImportPolicyFromFile(ctx context.Context, filePath string) error {
+// importPolicyFromFile 从策略文件导入策略到数据库
+func (c *Casbinx) importPolicyFromFile(ctx context.Context, filePath string) error {
 	// 检测文件的后缀
 	if filepath.Ext(filePath) != ".csv" {
-		return errors.WithStack(fmt.Errorf("文件后缀必须为 .csv"))
+		return errors.Errorf("文件后缀必须为 .csv")
 	}
 
 	// 解析策略文件
-	rules, err := s.parsePolicyFile(ctx, filePath)
+	rules, err := c.parsePolicyFile(ctx, filePath)
 	if err != nil {
 		return err
 	}
 
 	// 将策略保存到数据库
-	return s.Trans.Exec(ctx, func(ctx context.Context) error {
-		// 清空现有策略表
-		if err := s.CasbinRepository.DeleteAll(ctx); err != nil {
-			return err
+	var successCount, failureCount int
+	for _, rule := range rules {
+		// 创建策略
+		if err := c.CasbinRepository.Create(ctx, rule); err != nil {
+			logging.Context(ctx).Warn("创建策略出错", zap.Error(err), zap.Any("rule", rule))
+			failureCount++
+			continue
 		}
+		successCount++
+	}
 
-		// 批量插入规则
-		for _, rule := range rules {
-			if err := s.CasbinRepository.Create(ctx, rule); err != nil {
-				return err
-			}
-		}
-
-		logging.Context(ctx).Info(fmt.Sprintf("成功导入 %d 条策略到数据库", len(rules)))
-
-		return nil
-	})
+	logging.Context(ctx).Info("导入 Casbin 策略到数据库完成",
+		zap.Int("total_count", len(rules)),
+		zap.Int("success_count", successCount),
+		zap.Int("failure_count", failureCount),
+	)
+	return nil
 }
 
 // parsePolicyFile 解析策略文件
-func (s *CasbinService) parsePolicyFile(ctx context.Context, filePath string) ([]*schema.CasbinRule, error) {
+func (c *Casbinx) parsePolicyFile(ctx context.Context, filePath string) ([]*schema.CasbinRule, error) {
 	// 打开策略文件
 	file, err := os.Open(filePath)
 	if err != nil {
-		return nil, errors.WithStack(fmt.Errorf("打开策略文件失败: %v", err))
+		return nil, errors.Errorf("打开策略文件失败: %v", err)
 	}
 	defer file.Close()
 
@@ -383,7 +206,7 @@ func (s *CasbinService) parsePolicyFile(ctx context.Context, filePath string) ([
 		}
 
 		// 解析单行策略
-		rule, err := s.parsePolicyLine(ctx, lineNum, line)
+		rule, err := c.parsePolicyLine(ctx, lineNum, line)
 		if err != nil {
 			// 记录错误但继续解析
 			logging.Context(ctx).Warn(err.Error())
@@ -395,14 +218,14 @@ func (s *CasbinService) parsePolicyFile(ctx context.Context, filePath string) ([
 
 	// 检查扫描过程中是否有错误
 	if err := scanner.Err(); err != nil {
-		return nil, errors.WithStack(fmt.Errorf("读取策略文件失败: %v", err))
+		return nil, errors.Errorf("读取策略文件失败: %v", err)
 	}
 
 	return rules, nil
 }
 
 // parsePolicyLine 解析单行策略
-func (s *CasbinService) parsePolicyLine(ctx context.Context, lineNum int, line string) (*schema.CasbinRule, error) {
+func (c *Casbinx) parsePolicyLine(ctx context.Context, lineNum int, line string) (*schema.CasbinRule, error) {
 	// 解析策略行
 	parts := strings.Split(line, ",")
 	for i := range parts {
@@ -410,7 +233,7 @@ func (s *CasbinService) parsePolicyLine(ctx context.Context, lineNum int, line s
 	}
 
 	if len(parts) < 3 {
-		return nil, fmt.Errorf("策略文件第%d行格式错误: %s", lineNum, line)
+		return nil, errors.Errorf("策略文件第%d行格式错误: %s", lineNum, line)
 	}
 
 	// 创建 CasbinRule 实例

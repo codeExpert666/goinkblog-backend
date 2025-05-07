@@ -47,7 +47,7 @@ func newRedisCache(cli redisClienter, opts ...Option) Cacher {
 		o(defaultOpts)
 	}
 
-	return &redisCache{
+	return &RedisCache{
 		opts: defaultOpts,
 		cli:  cli,
 	}
@@ -63,16 +63,25 @@ type redisClienter interface {
 	Close() error
 }
 
-type redisCache struct {
+type RedisCache struct {
 	opts *options
 	cli  redisClienter
 }
 
-func (a *redisCache) getKey(ns, key string) string {
+// GetClient 获取Redis客户端实例
+func (a *RedisCache) GetClient() (*redis.Client, error) {
+	client, ok := a.cli.(*redis.Client)
+	if !ok {
+		return nil, fmt.Errorf("不是标准的Redis客户端")
+	}
+	return client, nil
+}
+
+func (a *RedisCache) getKey(ns, key string) string {
 	return fmt.Sprintf("%s%s%s", ns, a.opts.Delimiter, key)
 }
 
-func (a *redisCache) Set(ctx context.Context, ns, key, value string, expiration ...time.Duration) error {
+func (a *RedisCache) Set(ctx context.Context, ns, key, value string, expiration ...time.Duration) error {
 	var exp time.Duration
 	if len(expiration) > 0 {
 		exp = expiration[0]
@@ -82,7 +91,7 @@ func (a *redisCache) Set(ctx context.Context, ns, key, value string, expiration 
 	return cmd.Err()
 }
 
-func (a *redisCache) Get(ctx context.Context, ns, key string) (string, bool, error) {
+func (a *RedisCache) Get(ctx context.Context, ns, key string) (string, bool, error) {
 	cmd := a.cli.Get(ctx, a.getKey(ns, key))
 	if err := cmd.Err(); err != nil {
 		if err == redis.Nil {
@@ -93,7 +102,7 @@ func (a *redisCache) Get(ctx context.Context, ns, key string) (string, bool, err
 	return cmd.Val(), true, nil
 }
 
-func (a *redisCache) Exists(ctx context.Context, ns, key string) (bool, error) {
+func (a *RedisCache) Exists(ctx context.Context, ns, key string) (bool, error) {
 	cmd := a.cli.Exists(ctx, a.getKey(ns, key))
 	if err := cmd.Err(); err != nil {
 		return false, err
@@ -101,7 +110,7 @@ func (a *redisCache) Exists(ctx context.Context, ns, key string) (bool, error) {
 	return cmd.Val() > 0, nil
 }
 
-func (a *redisCache) Delete(ctx context.Context, ns, key string) error {
+func (a *RedisCache) Delete(ctx context.Context, ns, key string) error {
 	b, err := a.Exists(ctx, ns, key)
 	if err != nil {
 		return err
@@ -116,7 +125,7 @@ func (a *redisCache) Delete(ctx context.Context, ns, key string) error {
 	return nil
 }
 
-func (a *redisCache) GetAndDelete(ctx context.Context, ns, key string) (string, bool, error) {
+func (a *RedisCache) GetAndDelete(ctx context.Context, ns, key string) (string, bool, error) {
 	value, ok, err := a.Get(ctx, ns, key)
 	if err != nil {
 		return "", false, err
@@ -131,7 +140,7 @@ func (a *redisCache) GetAndDelete(ctx context.Context, ns, key string) (string, 
 	return value, true, nil
 }
 
-func (a *redisCache) Iterator(ctx context.Context, ns string, fn func(ctx context.Context, key, value string) bool) error {
+func (a *RedisCache) Iterator(ctx context.Context, ns string, fn func(ctx context.Context, key, value string) bool) error {
 	var cursor uint64 = 0
 
 LB_LOOP:
@@ -168,6 +177,6 @@ LB_LOOP:
 	return nil
 }
 
-func (a *redisCache) Close(ctx context.Context) error {
+func (a *RedisCache) Close(ctx context.Context) error {
 	return a.cli.Close()
 }

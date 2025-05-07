@@ -1,8 +1,10 @@
 package middleware
 
 import (
+	"context"
 	"time"
 
+	"github.com/codeExpert666/goinkblog-backend/pkg/logging"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 )
@@ -51,6 +53,7 @@ var DefaultCORSConfig = CORSConfig{
 
 func CORSWithConfig(cfg CORSConfig) gin.HandlerFunc {
 	if !cfg.Enable {
+		logging.Context(context.Background()).Debug("未启用 CORS 中间件")
 		return Empty() // 如果未启用 CORS，返回一个空的中间件
 	}
 

@@ -61,7 +61,7 @@ func (s *ArticleService) CreateArticle(ctx context.Context, userID uint, req *sc
 	}
 
 	// 获取文章详情
-	return s.GetArticleByID(ctx, article.ID)
+	return s.GetArticleByID(ctx, article.ID, userID)
 }
 
 func (s *ArticleService) addArticleTags(ctx context.Context, articleID uint, tagIDs []uint) error {
@@ -139,7 +139,7 @@ func (s *ArticleService) UpdateArticle(ctx context.Context, userID uint, id uint
 	}
 
 	// 获取文章详情
-	return s.GetArticleByID(ctx, article.ID)
+	return s.GetArticleByID(ctx, article.ID, userID)
 }
 
 // DeleteArticle 删除文章
@@ -168,18 +168,18 @@ func (s *ArticleService) DeleteArticle(ctx context.Context, userID uint, id uint
 	return err
 }
 
-func (s *ArticleService) UploadCover(c *gin.Context) (string, error) {
+func (s *ArticleService) UploadCover(c *gin.Context) (*schema.CoverResponse, error) {
 	ctx := c.Request.Context()
 
 	// 获取封面文件
 	file, err := c.FormFile("cover")
 	if err != nil {
-		return "", errors.BadRequest("获取封面文件失败: %s", err.Error())
+		return nil, errors.BadRequest("获取封面文件失败: %s", err.Error())
 	}
 
 	// 验证文件类型
 	if !util.IsImageFile(file.Filename) {
-		return "", errors.BadRequest("支持的文件格式为: %s", config.SupportedImageFormats)
+		return nil, errors.BadRequest("支持的文件格式为: %s", config.SupportedImageFormats)
 	}
 
 	// 生成唯一文件名
@@ -193,17 +193,19 @@ func (s *ArticleService) UploadCover(c *gin.Context) (string, error) {
 	// 保存文件
 	if err := c.SaveUploadedFile(file, dst); err != nil {
 		logging.Context(ctx).Error("保存图片文件失败", zap.String("filePath", dst), zap.Int64("fileSize", file.Size), zap.Error(err))
-		return "", errors.InternalServerError("保存图片文件失败: %s", err.Error())
+		return nil, errors.InternalServerError("保存图片文件失败: %s", err.Error())
 	}
 	logging.Context(ctx).Info("保存封面图片文件成功", zap.String("filePath", dst), zap.Int64("fileSize", file.Size))
 
-	return coverURL, nil
+	return &schema.CoverResponse{
+		URL: coverURL,
+	}, nil
 }
 
 // GetArticleByID 通过ID获取文章
-func (s *ArticleService) GetArticleByID(ctx context.Context, id uint) (*schema.ArticleResponse, error) {
+func (s *ArticleService) GetArticleByID(ctx context.Context, articleID uint, userID uint) (*schema.ArticleResponse, error) {
 	// 获取文章
-	article, err := s.ArticleRepository.GetByID(ctx, id)
+	article, err := s.ArticleRepository.GetByID(ctx, articleID)
 	if err != nil {
 		return nil, err
 	}
@@ -227,31 +229,18 @@ func (s *ArticleService) GetArticleByID(ctx context.Context, id uint) (*schema.A
 	}
 
 	// 获取标签
-	tags, err := s.ArticleRepository.GetArticleTags(ctx, id)
-	if err != nil {
-		logging.Context(ctx).Error("获取文章标签失败", zap.Uint("article_id", id), zap.Error(err))
-	} else if len(tags) > 0 {
-		response.Tags = tags
-	}
-
-	// 如果有分类，获取分类名称
-	if article.CategoryID != nil && *article.CategoryID > 0 {
-		category, err := s.CategoryRepository.GetByID(ctx, *article.CategoryID)
-		if err != nil {
-			logging.Context(ctx).Error("获取文章分类失败", zap.Uint("article_id", id), zap.Uint("category_id", *article.CategoryID), zap.Error(err))
-		} else {
-			response.CategoryName = category.Name
-		}
-	}
+	s.FillTags(ctx, response)
 
 	// 获取作者信息
-	if article.AuthorID > 0 {
-		user, err := s.UserRepository.GetByID(ctx, article.AuthorID)
+	s.FillAuthor(ctx, response)
+
+	// 如果用户已登录，获取用户与文章的交互状态
+	if userID > 0 {
+		interactions, err := s.GetArticleInteractions(ctx, userID, articleID)
 		if err != nil {
-			logging.Context(ctx).Error("获取文章作者信息失败", zap.Uint("article_id", id), zap.Uint("author_id", article.AuthorID), zap.Error(err))
+			logging.Context(ctx).Error("获取用户与文章的交互状态失败", zap.Uint("article_id", articleID), zap.Uint("user_id", userID), zap.Error(err))
 		} else {
-			response.Author = user.Username
-			response.AuthorAvatar = user.Avatar
+			response.Interactions = interactions
 		}
 	}
 
@@ -266,44 +255,87 @@ func (s *ArticleService) GetArticleList(ctx context.Context, params *schema.Arti
 		return nil, err
 	}
 
-	// 为每篇文章添加标签和作者信息
+	// 补充文章信息
 	for _, item := range result.Items {
-		// 获取标签
-		tags, err := s.ArticleRepository.GetArticleTags(ctx, item.ID)
-		if err != nil {
-			logging.Context(ctx).Error("获取文章对应标签失败", zap.Uint("article_id", item.ID), zap.Error(err))
-		} else if len(tags) > 0 {
-			// 提取标签名称
-			tagNames := make([]string, 0, len(tags))
-			for _, tag := range tags {
-				tagNames = append(tagNames, tag.Name)
-			}
-			item.Tags = tagNames
-		}
-
-		// 获取分类名称
-		if item.CategoryID != nil && *item.CategoryID > 0 {
-			category, err := s.CategoryRepository.GetByID(ctx, *item.CategoryID)
-			if err != nil {
-				logging.Context(ctx).Error("获取文章对应分类失败", zap.Uint("article_id", item.ID), zap.Uint("category_id", *item.CategoryID), zap.Error(err))
-			} else {
-				item.CategoryName = category.Name
-			}
-		}
-
-		// 获取作者信息
-		if item.AuthorID > 0 {
-			user, err := s.UserRepository.GetByID(ctx, item.AuthorID)
-			if err != nil {
-				logging.Context(ctx).Error("获取文章作者信息失败", zap.Uint("article_id", item.ID), zap.Uint("author_id", item.AuthorID), zap.Error(err))
-			} else {
-				item.Author = user.Username
-				item.AuthorAvatar = user.Avatar
-			}
-		}
+		s.FillAuthor(ctx, item)
+		s.FillTags(ctx, item)
 	}
 
 	return result, nil
+}
+
+// 获取作者信息
+func (s *ArticleService) FillAuthor(ctx context.Context, item interface{}) {
+	// 使用类型断言获取文章 ID 与作者 ID
+	var articleID, userID uint
+	var authorSetter func(string, string)
+
+	// 根据不同类型获取 ID 并设置回调函数
+	switch v := item.(type) {
+	case *schema.ArticleListItem:
+		articleID, userID = v.ID, v.AuthorID
+		authorSetter = func(username, avatar string) {
+			v.Author = username
+			v.AuthorAvatar = avatar
+		}
+	case *schema.ArticleResponse:
+		articleID, userID = v.ID, v.AuthorID
+		authorSetter = func(username, avatar string) {
+			v.Author = username
+			v.AuthorAvatar = avatar
+		}
+	default:
+		logging.Context(ctx).Error("不支持的文章类型", zap.String("type", fmt.Sprintf("%T", item)))
+		return
+	}
+
+	// 获取文章作者信息
+	if userID > 0 {
+		user, err := s.UserRepository.GetByID(ctx, userID)
+		if err != nil {
+			logging.Context(ctx).Error("获取文章作者信息失败", zap.Uint("article_id", articleID), zap.Uint("author_id", userID), zap.Error(err))
+		} else {
+			authorSetter(user.Username, user.Avatar)
+		}
+	}
+}
+
+// 获取标签
+func (s *ArticleService) FillTags(ctx context.Context, item interface{}) {
+	// 使用类型断言获取文章ID
+	var articleID uint
+	var tagSetter func([]uint)
+
+	// 根据不同类型获取ID并设置回调函数
+	switch v := item.(type) {
+	case *schema.ArticleListItem:
+		articleID = v.ID
+		tagSetter = func(tagIDs []uint) {
+			v.Tags = tagIDs
+		}
+	case *schema.ArticleResponse:
+		articleID = v.ID
+		tagSetter = func(tagIDs []uint) {
+			v.Tags = tagIDs
+		}
+	default:
+		logging.Context(ctx).Error("不支持的文章类型", zap.String("type", fmt.Sprintf("%T", item)))
+		return
+	}
+
+	// 获取文章标签
+	tags, err := s.ArticleRepository.GetArticleTags(ctx, articleID)
+	if err != nil {
+		logging.Context(ctx).Error("获取文章对应标签失败", zap.Uint("article_id", articleID), zap.Error(err))
+	} else if len(tags) > 0 {
+		// 提取标签名称
+		tagIDs := make([]uint, 0, len(tags))
+		for _, tag := range tags {
+			tagIDs = append(tagIDs, tag.ID)
+		}
+		// 使用回调函数设置标签
+		tagSetter(tagIDs)
+	}
 }
 
 // ViewArticle 浏览文章
@@ -322,7 +354,7 @@ func (s *ArticleService) ViewArticle(ctx context.Context, userID, articleID uint
 }
 
 // LikeArticle 点赞/取消点赞文章
-func (s *ArticleService) LikeArticle(ctx context.Context, userID, articleID uint) (*schema.InteractionResponse, error) {
+func (s *ArticleService) LikeArticle(ctx context.Context, userID, articleID uint) (*schema.ArticleInteractionResponse, error) {
 	// 获取用户当前交互状态
 	_, err := s.InteractionRepository.Get(ctx, userID, articleID, "like")
 	if err == nil { // 已点赞，则取消点赞
@@ -353,11 +385,18 @@ func (s *ArticleService) LikeArticle(ctx context.Context, userID, articleID uint
 	}
 
 	// 获取最新的交互状态
-	return s.InteractionRepository.GetUserInteractions(ctx, userID, articleID)
+	interaction, err := s.InteractionRepository.GetUserInteractions(ctx, userID, articleID)
+	if err != nil {
+		return nil, err
+	}
+
+	return &schema.ArticleInteractionResponse{
+		Interacted: interaction.Liked,
+	}, nil
 }
 
 // FavoriteArticle 收藏/取消收藏文章
-func (s *ArticleService) FavoriteArticle(ctx context.Context, userID, articleID uint) (*schema.InteractionResponse, error) {
+func (s *ArticleService) FavoriteArticle(ctx context.Context, userID, articleID uint) (*schema.ArticleInteractionResponse, error) {
 	// 获取用户当前交互状态
 	_, err := s.InteractionRepository.Get(ctx, userID, articleID, "favorite")
 	if err == nil { // 已收藏，则取消收藏
@@ -388,37 +427,111 @@ func (s *ArticleService) FavoriteArticle(ctx context.Context, userID, articleID 
 	}
 
 	// 获取最新的交互状态
-	return s.InteractionRepository.GetUserInteractions(ctx, userID, articleID)
+	interaction, err := s.InteractionRepository.GetUserInteractions(ctx, userID, articleID)
+	if err != nil {
+		return nil, err
+	}
+
+	return &schema.ArticleInteractionResponse{
+		Interacted: interaction.Favorited,
+	}, nil
 }
 
 // GetUserLikedArticles 获取用户点赞的文章
 func (s *ArticleService) GetUserLikedArticles(ctx context.Context, userID uint, page, pageSize int) (*schema.ArticlePaginationResult, error) {
-	return s.ArticleRepository.GetUserLikedArticles(ctx, userID, page, pageSize)
+	logging.Context(ctx).Debug("获取用户点赞的文章", zap.Uint("user_id", userID), zap.Int("page", page), zap.Int("page_size", pageSize))
+	result, err := s.ArticleRepository.GetUserLikedArticles(ctx, userID, page, pageSize)
+	if err != nil {
+		return nil, err
+	}
+
+	// 补充文章信息
+	for _, item := range result.Items {
+		s.FillAuthor(ctx, item)
+		s.FillTags(ctx, item)
+	}
+
+	return result, nil
 }
 
 // GetUserFavoriteArticles 获取用户收藏的文章
 func (s *ArticleService) GetUserFavoriteArticles(ctx context.Context, userID uint, page, pageSize int) (*schema.ArticlePaginationResult, error) {
-	return s.ArticleRepository.GetUserFavoriteArticles(ctx, userID, page, pageSize)
+	result, err := s.ArticleRepository.GetUserFavoriteArticles(ctx, userID, page, pageSize)
+	if err != nil {
+		return nil, err
+	}
+
+	// 补充文章信息
+	for _, item := range result.Items {
+		s.FillAuthor(ctx, item)
+		s.FillTags(ctx, item)
+	}
+
+	return result, nil
 }
 
 // GetUserViewHistory 获取用户浏览历史
 func (s *ArticleService) GetUserViewHistory(ctx context.Context, userID uint, page, pageSize int) (*schema.ArticlePaginationResult, error) {
-	return s.InteractionRepository.GetUserViewHistory(ctx, userID, page, pageSize)
+	result, err := s.InteractionRepository.GetUserViewHistory(ctx, userID, page, pageSize)
+	if err != nil {
+		return nil, err
+	}
+
+	// 补充文章信息
+	for _, item := range result.Items {
+		s.FillAuthor(ctx, item)
+		s.FillTags(ctx, item)
+	}
+
+	return result, nil
 }
 
 // GetUserCommentedArticles 获取用户评论过的文章
 func (s *ArticleService) GetUserCommentedArticles(ctx context.Context, userID uint, page, pageSize int) (*schema.ArticlePaginationResult, error) {
-	return s.ArticleRepository.GetUserCommentedArticles(ctx, userID, page, pageSize)
+	result, err := s.ArticleRepository.GetUserCommentedArticles(ctx, userID, page, pageSize)
+	if err != nil {
+		return nil, err
+	}
+
+	// 补充文章信息
+	for _, item := range result.Items {
+		s.FillAuthor(ctx, item)
+		s.FillTags(ctx, item)
+	}
+
+	return result, nil
 }
 
 // GetHotArticles 获取热门文章
-func (s *ArticleService) GetHotArticles(ctx context.Context, limit int) ([]schema.ArticleListItem, error) {
-	return s.ArticleRepository.GetHotArticles(ctx, limit)
+func (s *ArticleService) GetHotArticles(ctx context.Context, limit int) ([]*schema.ArticleListItem, error) {
+	result, err := s.ArticleRepository.GetHotArticles(ctx, limit)
+	if err != nil {
+		return nil, err
+	}
+
+	// 补充文章信息
+	for _, item := range result {
+		s.FillAuthor(ctx, item)
+		s.FillTags(ctx, item)
+	}
+
+	return result, nil
 }
 
 // GetLatestArticles 获取最新文章
-func (s *ArticleService) GetLatestArticles(ctx context.Context, limit int) ([]schema.ArticleListItem, error) {
-	return s.ArticleRepository.GetLatestArticles(ctx, limit)
+func (s *ArticleService) GetLatestArticles(ctx context.Context, limit int) ([]*schema.ArticleListItem, error) {
+	result, err := s.ArticleRepository.GetLatestArticles(ctx, limit)
+	if err != nil {
+		return nil, err
+	}
+
+	// 补充文章信息
+	for _, item := range result {
+		s.FillAuthor(ctx, item)
+		s.FillTags(ctx, item)
+	}
+
+	return result, nil
 }
 
 // GetArticleInteractions 获取用户与文章的交互状态

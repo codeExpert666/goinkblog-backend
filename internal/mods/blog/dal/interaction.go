@@ -21,7 +21,6 @@ type InteractionRepository struct {
 	DB *gorm.DB
 }
 
-// TODO: 检查更新操作的是否正确（Omit 没有忽略 ID）
 // CreateOrUpdate 创建或更新用户交互
 func (r *InteractionRepository) CreateOrUpdate(ctx context.Context, interaction *schema.UserInteraction) error {
 	// 先查询是否存在
@@ -41,12 +40,11 @@ func (r *InteractionRepository) CreateOrUpdate(ctx context.Context, interaction 
 		return errors.WithStack(result.Error)
 	}
 
-	// 如果存在则更新
+	// 如果存在则更新交互时间
 	result := GetInteractionDB(ctx, r.DB).
 		Where("user_id = ? AND article_id = ? AND type = ?",
 			interaction.UserID, interaction.ArticleID, interaction.Type).
-		Select("*").Omit("created_at").
-		Updates(interaction)
+		Update("created_at", interaction.CreatedAt)
 	return errors.WithStack(result.Error)
 }
 
@@ -110,6 +108,7 @@ func (r *InteractionRepository) RecordView(ctx context.Context, userID, articleI
 		UserID:    userID,
 		ArticleID: articleID,
 		Type:      "view",
+		CreatedAt: time.Now(),
 	}
 
 	return r.CreateOrUpdate(ctx, &interaction)
@@ -128,10 +127,11 @@ func (r *InteractionRepository) GetUserViewHistory(ctx context.Context, userID u
 	}
 
 	articleName := new(schema.Article).TableName()
+	db := GetArticleDB(ctx, r.DB).Table(fmt.Sprintf("%s AS a", articleName))
+
 	interactionName := new(schema.UserInteraction).TableName()
-	db := GetArticleDB(ctx, r.DB).
-		Select(fmt.Sprintf("%s.*, u.created_at as interaction_time", articleName)).
-		Joins(fmt.Sprintf("JOIN %s u ON %s.id = u.article_id", interactionName, articleName)).
+	db = db.Select("a.*", "u.created_at as interaction_time").
+		Joins(fmt.Sprintf("JOIN %s AS u ON a.id = u.article_id", interactionName)).
 		Where("u.user_id = ? AND u.type = ?", userID, "view")
 
 	// 计算总数
@@ -154,21 +154,21 @@ func (r *InteractionRepository) GetUserViewHistory(ctx context.Context, userID u
 	}
 
 	// 构造响应数据
-	var items []schema.ArticleListItem
+	var items []*schema.ArticleListItem
 	for _, article := range articles {
-		item := schema.ArticleListItem{
-			ID:            article.ID,
-			Title:         article.Title,
-			Summary:       article.Summary,
-			AuthorID:      article.AuthorID,
-			CategoryID:    article.CategoryID,
-			Cover:         article.Cover,
-			Status:        article.Status,
-			ViewCount:     article.ViewCount,
-			LikeCount:     article.LikeCount,
-			CommentCount:  article.CommentCount,
-			FavoriteCount: article.FavoriteCount,
-			CreatedAt:     article.CreatedAt,
+		item := &schema.ArticleListItem{
+			ID:              article.ID,
+			Title:           article.Title,
+			Summary:         article.Summary,
+			AuthorID:        article.AuthorID,
+			CategoryID:      article.CategoryID,
+			Cover:           article.Cover,
+			Status:          article.Status,
+			ViewCount:       article.ViewCount,
+			LikeCount:       article.LikeCount,
+			CommentCount:    article.CommentCount,
+			FavoriteCount:   article.FavoriteCount,
+			CreatedAt:       article.CreatedAt,
 			InteractionTime: article.InteractionTime,
 		}
 		items = append(items, item)

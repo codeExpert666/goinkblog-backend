@@ -12,6 +12,7 @@ import (
 	"github.com/codeExpert666/goinkblog-backend/internal/mods/ai"
 	api5 "github.com/codeExpert666/goinkblog-backend/internal/mods/ai/api"
 	biz5 "github.com/codeExpert666/goinkblog-backend/internal/mods/ai/biz"
+	dal5 "github.com/codeExpert666/goinkblog-backend/internal/mods/ai/dal"
 	"github.com/codeExpert666/goinkblog-backend/internal/mods/auth"
 	"github.com/codeExpert666/goinkblog-backend/internal/mods/auth/api"
 	"github.com/codeExpert666/goinkblog-backend/internal/mods/auth/biz"
@@ -62,14 +63,16 @@ func BuildInjector(ctx context.Context) (*Injector, func(), error) {
 		AuthService: authService,
 	}
 	casbinRepository := &dal.CasbinRepository{
-		DB: db,
+		Cache: cacher,
+		DB:    db,
 	}
-	trans := &util.Trans{
-		DB: db,
+	casbinx := biz.Casbinx{
+		Cache:            cacher,
+		CasbinRepository: casbinRepository,
 	}
 	casbinService := &biz.CasbinService{
 		CasbinRepository: casbinRepository,
-		Trans:            trans,
+		Casbinx:          casbinx,
 	}
 	casbinHandler := &api.CasbinHandler{
 		CasbinService: casbinService,
@@ -94,7 +97,7 @@ func BuildInjector(ctx context.Context) (*Injector, func(), error) {
 	interactionRepository := &dal2.InteractionRepository{
 		DB: db,
 	}
-	utilTrans := util.Trans{
+	trans := util.Trans{
 		DB: db,
 	}
 	articleService := &biz2.ArticleService{
@@ -104,7 +107,7 @@ func BuildInjector(ctx context.Context) (*Injector, func(), error) {
 		ArticleTagRepository:  articleTagRepository,
 		InteractionRepository: interactionRepository,
 		UserRepository:        userRepository,
-		Trans:                 utilTrans,
+		Trans:                 trans,
 	}
 	articleHandler := &api2.ArticleHandler{
 		ArticleService: articleService,
@@ -115,10 +118,13 @@ func BuildInjector(ctx context.Context) (*Injector, func(), error) {
 	categoryHandler := &api2.CategoryHandler{
 		CategoryService: categoryService,
 	}
+	utilTrans := &util.Trans{
+		DB: db,
+	}
 	tagService := &biz2.TagService{
 		TagRepository:        tagRepository,
 		ArticleTagRepository: articleTagRepository,
-		Trans:                trans,
+		Trans:                utilTrans,
 	}
 	tagHandler := &api2.TagHandler{
 		TagService: tagService,
@@ -135,7 +141,7 @@ func BuildInjector(ctx context.Context) (*Injector, func(), error) {
 	commentService := &biz3.CommentService{
 		CommentRepository: commentRepository,
 		ArticleRepository: articleRepository,
-		Trans:             utilTrans,
+		Trans:             trans,
 	}
 	commentHandler := &api3.CommentHandler{
 		CommentService: commentService,
@@ -149,6 +155,7 @@ func BuildInjector(ctx context.Context) (*Injector, func(), error) {
 	}
 	statService := &biz4.StatService{
 		StatRepository: statRepository,
+		Cache:          cacher,
 	}
 	statHandler := &api4.StatHandler{
 		StatService: statService,
@@ -157,12 +164,30 @@ func BuildInjector(ctx context.Context) (*Injector, func(), error) {
 		DB:          db,
 		StatHandler: statHandler,
 	}
-	aiService := &biz5.AIService{}
-	aiHandler := &api5.AIHandler{
-		AIService: aiService,
+	modelRepository := &dal5.ModelRepository{
+		Cache: cacher,
+		DB:    db,
+	}
+	modelService := &biz5.ModelService{
+		ModelRepository: modelRepository,
+	}
+	modelHandler := &api5.ModelHandler{
+		ModelService: modelService,
+	}
+	selector := &biz5.Selector{
+		Cache:           cacher,
+		ModelRepository: modelRepository,
+	}
+	assistantService := &biz5.AssistantService{
+		Selector: selector,
+	}
+	assistantHandler := &api5.AssistantHandler{
+		AssistantService: assistantService,
 	}
 	aiAI := &ai.AI{
-		AIHandler: aiHandler,
+		DB:               db,
+		ModelHandler:     modelHandler,
+		AssistantHandler: assistantHandler,
 	}
 	modsMods := &mods.Mods{
 		Auth:    authAuth,

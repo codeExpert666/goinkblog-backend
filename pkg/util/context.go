@@ -84,7 +84,7 @@ func FromIsAdminUser(ctx context.Context) bool {
 	return v != nil && v.(bool)
 }
 
-// 用户缓存
+// UserCache 用户缓存
 type UserCache struct {
 	Role string `json:"role"`
 }
@@ -109,8 +109,38 @@ func NewUserCache(ctx context.Context, userCache UserCache) context.Context {
 
 func FromUserCache(ctx context.Context) UserCache {
 	v := ctx.Value(userCacheCtx{})
-	if v != nil {
+	if v != nil { // 存在用户缓存
 		return v.(UserCache)
 	}
+
+	// 不存在用户缓存（管理员/匿名用户）
+	if id := FromUserID(ctx); id != 0 {
+		return UserCache{Role: "admin"}
+	}
 	return UserCache{Role: "anonymous"}
+}
+
+func ExtendContext(newCtx context.Context, oldCtx context.Context) context.Context {
+	// 复制 TraceID
+	if traceID := FromTraceID(oldCtx); traceID != "" {
+		newCtx = NewTraceID(newCtx, traceID)
+	}
+	// 复制 Transaction 数据库事务
+	if db, ok := FromTrans(oldCtx); ok {
+		newCtx = NewTrans(newCtx, db)
+	}
+	// 复制数据库行锁
+	if ok := FromRowLock(oldCtx); ok {
+		newCtx = NewRowLock(newCtx)
+	}
+	// 复制 UserID
+	if id := FromUserID(oldCtx); id != 0 {
+		newCtx = NewUserID(newCtx, id)
+	}
+	// 复制用户缓存
+	if cache := FromUserCache(oldCtx); cache.Role != "" {
+		newCtx = NewUserCache(newCtx, cache)
+	}
+
+	return newCtx
 }

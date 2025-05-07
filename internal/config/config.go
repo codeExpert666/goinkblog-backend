@@ -15,7 +15,7 @@ type Config struct {
 	Middleware Middleware           `json:"middleware"`
 	Util       Util                 `json:"util"`
 	Dictionary Dictionary           `json:"dictionary"`
-	AI         AIConfig             `json:"ai"`
+	AI         AI                   `json:"ai"`
 }
 
 type General struct {
@@ -88,12 +88,25 @@ type Util struct {
 	} `json:"captcha"`
 }
 
-type AIConfig struct {
-	Provider    string  `default:"local" json:"provider"` // openai, local
+type AI struct {
+	Models   []Model `json:"models"`
+	Selector struct {
+		LoadModelsInterval   int `default:"11" json:"load_models_interval"`  // 单位为分钟
+		UpdateWeightInterval int `default:"2" json:"update_weight_interval"` // 单位为分钟
+	} `json:"selector"`
+}
+
+type Model struct {
+	Provider    string  `json:"provider"` // openai, local
 	APIKey      string  `json:"api_key"`
-	Endpoint    string  `default:"http://localhost:11434/api/generate" json:"endpoint"`
-	Model       string  `default:"gemma3:12b" json:"model"`
-	Temperature float64 `default:"0.7" json:"temperature"`
+	Endpoint    string  `json:"endpoint"`
+	ModelName   string  `json:"model_name"`
+	Temperature float64 `json:"temperature"`
+	Timeout     int     `json:"timeout"`
+	Active      bool    `json:"active"`
+	Description string  `json:"description"`
+	RPM         int     `json:"rpm"`
+	Weight      int     `json:"weight"`
 }
 
 type Dictionary struct {
@@ -116,9 +129,9 @@ func (c *Config) Print() {
 	if c.General.DisablePrintConfig {
 		return
 	}
-	fmt.Println("// ----------------------- Load configurations start ------------------------")
+	fmt.Println("// ----------------------- Init configurations start ------------------------")
 	fmt.Println(c.String())
-	fmt.Println("// ----------------------- Load configurations end --------------------------")
+	fmt.Println("// ----------------------- Init configurations end --------------------------")
 }
 
 func (c *Config) FormatTableName(name string) string {

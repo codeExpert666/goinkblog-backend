@@ -57,6 +57,9 @@ func (c *Comment) RegisterRouters(ctx context.Context, comment *gin.RouterGroup)
 		comment.DELETE("/:id", c.CommentHandler.DeleteComment)
 		comment.GET("/:id/replies", c.CommentHandler.GetCommentReplies)
 		comment.GET("/user", c.CommentHandler.GetUserComments)
+		// 管理员接口
+		comment.GET("/review", c.CommentHandler.GetCommentsForReview)
+		comment.POST("/review", c.CommentHandler.ReviewComment)
 	}
 	return nil
 }
@@ -65,4 +68,3 @@ func (c *Comment) RegisterRouters(ctx context.Context, comment *gin.RouterGroup)
 func (c *Comment) Release(ctx context.Context) error {
 	return nil
 }
-

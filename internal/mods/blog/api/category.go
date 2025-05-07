@@ -17,7 +17,7 @@ type CategoryHandler struct {
 }
 
 // @Tags CategoryAPI
-// @Summary 获取所有分类
+// @Summary 获取所有分类（目前该 API 没用上）
 // @Success 200 {object} util.ResponseResult{data=[]schema.CategoryResponse}
 // @Failure 500 {object} util.ResponseResult
 // @Router /api/blog/categories [get]
@@ -36,22 +36,23 @@ func (h *CategoryHandler) GetAllCategories(c *gin.Context) {
 // @Summary 获取分类列表（带分页）
 // @Param page query int false "页码" minimum(1) default(1)
 // @Param page_size query int false "每页容量" minimum(1) maximum(100) default(10)
+// @Param sort_by_id query string false "如何按照分类ID排序" Enums(desc, asc)
+// @Param sort_by_article_count query string false "如何按照分类的文章数量排序" Enums(desc, asc)
+// @Param sort_by_create query string false "如何按照创建时间排序" Enums(desc, asc)
+// @Param sort_by_update query string false "如何按照更新时间排序" Enums(desc, asc)
 // @Success 200 {object} util.ResponseResult{data=schema.CategoryPaginationResult}
 // @Failure 400 {object} util.ResponseResult
 // @Failure 500 {object} util.ResponseResult
 // @Router /api/blog/categories/paginate [get]
 func (h *CategoryHandler) GetCategoryList(c *gin.Context) {
-	page, err := strconv.Atoi(c.DefaultQuery("page", "1"))
-	if err != nil {
-		util.ResError(c, errors.BadRequest("无效的页码"))
-	}
-	pageSize, err := strconv.Atoi(c.DefaultQuery("page_size", "10"))
-	if err != nil {
-		util.ResError(c, errors.BadRequest("无效的页容量"))
+	var params schema.CategoryQueryParams
+	if err := util.ParseQuery(c, &params); err != nil {
+		util.ResError(c, err)
+		return
 	}
 
 	ctx := c.Request.Context()
-	data, err := h.CategoryService.GetCategoryList(ctx, page, pageSize)
+	data, err := h.CategoryService.GetCategoryList(ctx, &params)
 	if err != nil {
 		util.ResError(c, err)
 		return

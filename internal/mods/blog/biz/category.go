@@ -112,6 +112,6 @@ func (s *CategoryService) GetAllCategories(ctx context.Context) ([]schema.Catego
 }
 
 // GetCategoryList 获取分类列表（带分页）
-func (s *CategoryService) GetCategoryList(ctx context.Context, page, pageSize int) (*schema.CategoryPaginationResult, error) {
-	return s.CategoryRepository.GetList(ctx, page, pageSize)
+func (s *CategoryService) GetCategoryList(ctx context.Context, params *schema.CategoryQueryParams) (*schema.CategoryPaginationResult, error) {
+	return s.CategoryRepository.GetList(ctx, params)
 }

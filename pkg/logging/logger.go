@@ -115,3 +115,27 @@ func Context(ctx context.Context) *zap.Logger {
 	}
 	return FromLogger(ctx).With(fields...) // 创建子日志记录器，沿用父日志记录器的配置
 }
+
+func ExtendLoggerContext(newCtx context.Context, oldCtx context.Context) context.Context {
+	// 复制 Logger
+	if logger := FromLogger(oldCtx); logger != nil {
+		newCtx = NewLogger(newCtx, logger)
+	}
+
+	// 复制 TraceID
+	if traceID := FromTraceID(oldCtx); traceID != "" {
+		newCtx = NewTraceID(newCtx, traceID)
+	}
+
+	// 复制 Tag
+	if tag := FromTag(oldCtx); tag != "" {
+		newCtx = NewTag(newCtx, tag)
+	}
+
+	// 复制 UserID
+	if userID := FromUserID(oldCtx); userID != 0 {
+		newCtx = NewUserID(newCtx, userID)
+	}
+
+	return newCtx
+}

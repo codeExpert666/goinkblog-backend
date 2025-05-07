@@ -1,8 +1,8 @@
 {
   "logger": {
-    "debug": true,
+    "debug": false,
     "level": "debug",
-    "caller_skip": 2,
+    "caller_skip": 3,
     "file": {
       "enable": false,
       "path": "logs/goinkblog.log",

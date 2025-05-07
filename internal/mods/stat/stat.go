@@ -42,11 +42,23 @@ func (s *Stat) Init(ctx context.Context) error {
 func (s *Stat) RegisterRouters(ctx context.Context, stat *gin.RouterGroup) error {
 	// 统计相关接口
 	{
-		stat.GET("/articles", s.StatHandler.GetArticleStatistic)
+		stat.GET("/user/articles", s.StatHandler.GetUserArticleStatistic)
+		stat.GET("/overview", s.StatHandler.GetSiteOverview)
 		stat.GET("/visits", s.StatHandler.GetVisitTrend)
 		stat.GET("/activity", s.StatHandler.GetUserActivityTrend)
+		stat.GET("/user/categories", s.StatHandler.GetUserCategoryDistribution)
 		stat.GET("/categories", s.StatHandler.GetCategoryDistribution)
 		stat.GET("/logger", s.StatHandler.GetLogger)
+		stat.GET("/user/articles/visits", s.StatHandler.GetUserArticleVisitTrend)
+		stat.GET("/comments", s.StatHandler.GetCommentStatistic)
+		stat.GET("/system", s.StatHandler.GetSystemInfo)
+		stat.GET("/cpu", s.StatHandler.GetCPUInfo)
+		stat.GET("/memory", s.StatHandler.GetMemoryInfo)
+		stat.GET("/disk", s.StatHandler.GetDiskInfo)
+		stat.GET("/go", s.StatHandler.GetGoInfo)
+		stat.GET("/db", s.StatHandler.GetDBInfo)
+		stat.GET("/cache", s.StatHandler.GetCacheInfo)
+		stat.GET("/articles/creation", s.StatHandler.GetArticleCreationTimeStats)
 	}
 	return nil
 }

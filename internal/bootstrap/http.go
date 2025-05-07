@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
+	"github.com/casbin/casbin/v2"
 	"net/http"
 	"time"
 
@@ -48,10 +49,9 @@ func startHTTPServer(ctx context.Context, injector *wirex.Injector) (func(), err
 	})
 
 	allowedPrefixes := injector.M.RouterPrefixes()
-	aiPathPrefixes := injector.M.AIRouterPrefixes()
 
 	// 注册中间件
-	if err := useHTTPMiddlewares(ctx, e, injector, allowedPrefixes, aiPathPrefixes); err != nil {
+	if err := useHTTPMiddlewares(ctx, e, injector, allowedPrefixes); err != nil {
 		return nil, err
 	}
 
@@ -111,7 +111,7 @@ func startHTTPServer(ctx context.Context, injector *wirex.Injector) (func(), err
 }
 
 // 使用HTTP中间件
-func useHTTPMiddlewares(ctx context.Context, e *gin.Engine, injector *wirex.Injector, allowedPrefixes []string, aiPathPrefixes []string) error {
+func useHTTPMiddlewares(ctx context.Context, e *gin.Engine, injector *wirex.Injector, allowedPrefixes []string) error {
 	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
 		Enable:                 config.C.Middleware.CORS.Enable,
 		AllowAllOrigins:        config.C.Middleware.CORS.AllowAllOrigins,
@@ -147,22 +147,23 @@ func useHTTPMiddlewares(ctx context.Context, e *gin.Engine, injector *wirex.Inje
 		MaxContentLen:       config.C.Middleware.CopyBody.MaxContentLen,
 	}))
 
-	// 定义Skipper函数，通过RBAC策略来确定是否跳过认证检查
-	authSkipper := func(c *gin.Context) bool {
-		// 检查当前请求是否为匿名用户允许访问的API
-		// 使用Casbin服务的MiddlewareEnforce方法检查"anonymous"用户是否有权访问
-		allowed, err := injector.M.Auth.CasbinHandler.CasbinService.MiddlewareEnforce(
-			c.Request.Context(),
+	// 定义auth函数，通过RBAC策略来确定请求是否需要认证
+	authFunc := func(c *gin.Context) bool {
+		logging.Context(c.Request.Context()).Debug("进入 authFunc 函数")
+		// 检查"anonymous"用户是否有权访问
+		e := injector.M.Auth.CasbinHandler.CasbinService.Casbinx.GetEnforcer()
+		allowed, err := e.Enforce(
 			"anonymous",
 			c.Request.URL.Path,
 			c.Request.Method,
 		)
 		if err != nil {
-			logging.Context(c.Request.Context()).Error("认证中间件检查匿名访问权限失败", zap.Error(err))
-			return false
+			logging.Context(c.Request.Context()).Error("认证中间件检查请求是否需要认证失败", zap.Error(err))
+			return true
 		}
-		// 如果allowed为true，表示匿名用户可以访问，应该跳过认证检查
-		return allowed
+		logging.Context(c.Request.Context()).Debug("请求是否需要认证", zap.Bool("need_auth", !allowed))
+		// 如果allowed为true，表示匿名用户可以访问，不需要认证
+		return !allowed
 	}
 
 	e.Use(middleware.AuthWithConfig(middleware.AuthConfig{
@@ -170,17 +171,15 @@ func useHTTPMiddlewares(ctx context.Context, e *gin.Engine, injector *wirex.Inje
 		SkippedPathPrefixes: config.C.Middleware.Auth.SkippedPathPrefixes,
 		ParseUserID:         injector.M.Auth.AuthHandler.AuthService.ParseUserID,
 		AdminID:             config.C.General.Admin.ID,
-		Skipper:             authSkipper, // 使用自定义 Skipper 函数
+		Auth:                authFunc,
 	}))
 
 	e.Use(middleware.RateLimiterWithConfig(middleware.RateLimiterConfig{
-		Enable:                  config.C.Middleware.RateLimiter.Enable,
-		AllowedPathPrefixes:     allowedPrefixes,
-		SkippedPathPrefixes:     config.C.Middleware.RateLimiter.SkippedPathPrefixes,
-		AIPathPrefixes:          aiPathPrefixes,
-		MaxRequestPerIPMinute:   config.C.Middleware.RateLimiter.MaxRequestPerIPMinute,
-		MaxRequestPerUserSecond: config.C.Middleware.RateLimiter.MaxRequestPerUserSecond,
-		MaxAIRequestPerUserHour: config.C.Middleware.RateLimiter.MaxAIRequestPerUserHour,
+		Enable:              config.C.Middleware.RateLimiter.Enable,
+		AllowedPathPrefixes: allowedPrefixes,
+		SkippedPathPrefixes: config.C.Middleware.RateLimiter.SkippedPathPrefixes,
+		IPLimit:             config.C.Middleware.RateLimiter.IPLimit,
+		UserLimit:           config.C.Middleware.RateLimiter.UserLimit,
 		RedisConfig: middleware.RateLimiterRedisConfig{
 			Addr:     config.C.Middleware.RateLimiter.Redis.Addr,
 			Password: config.C.Middleware.RateLimiter.Redis.Password,
@@ -192,7 +191,9 @@ func useHTTPMiddlewares(ctx context.Context, e *gin.Engine, injector *wirex.Inje
 	e.Use(middleware.CasbinWithConfig(middleware.CasbinConfig{
 		AllowedPathPrefixes: allowedPrefixes,
 		SkippedPathPrefixes: config.C.Middleware.Casbin.SkippedPathPrefixes,
-		Enforce:             injector.M.Auth.CasbinHandler.CasbinService.MiddlewareEnforce,
+		GetEnforcer: func(c *gin.Context) *casbin.Enforcer {
+			return injector.M.Auth.CasbinHandler.CasbinService.Casbinx.GetEnforcer()
+		},
 		GetSubjects: func(c *gin.Context) []string {
 			return []string{util.FromUserCache(c.Request.Context()).Role}
 		},

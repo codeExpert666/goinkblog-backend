@@ -14,14 +14,12 @@ import (
 )
 
 type RateLimiterConfig struct {
-	Enable                  bool
-	AllowedPathPrefixes     []string
-	SkippedPathPrefixes     []string
-	AIPathPrefixes          []string
-	MaxRequestPerIPMinute   int
-	MaxRequestPerUserSecond int
-	MaxAIRequestPerUserHour int
-	RedisConfig             RateLimiterRedisConfig
+	Enable              bool
+	AllowedPathPrefixes []string
+	SkippedPathPrefixes []string
+	IPLimit             int
+	UserLimit           int
+	RedisConfig         RateLimiterRedisConfig
 }
 
 func RateLimiterWithConfig(cfg RateLimiterConfig) gin.HandlerFunc {
@@ -32,8 +30,10 @@ func RateLimiterWithConfig(cfg RateLimiterConfig) gin.HandlerFunc {
 	redisRateLimiter := NewRatelimiterRedis(cfg.RedisConfig)
 
 	return func(c *gin.Context) {
+		logging.Context(c.Request.Context()).Debug("进入限流器中间件")
 		if !AllowedPathPrefixes(c, cfg.AllowedPathPrefixes...) ||
 			SkippedPathPrefixes(c, cfg.SkippedPathPrefixes...) {
+			logging.Context(c.Request.Context()).Debug("跳过限流器中间件")
 			c.Next()
 			return
 		}
@@ -45,22 +45,22 @@ func RateLimiterWithConfig(cfg RateLimiterConfig) gin.HandlerFunc {
 
 		ctx := c.Request.Context()
 		if userID := util.FromUserID(ctx); userID != 0 { // 已登录用户
-			if AllowedPathPrefixes(c, cfg.AIPathPrefixes...) { // AI 请求
-				allowed, err = redisRateLimiter.Allow(ctx, fmt.Sprintf("ai:%d", userID),
-					redis_rate.PerHour(cfg.MaxAIRequestPerUserHour))
-			} else { // 普通请求
-				allowed, err = redisRateLimiter.Allow(ctx, fmt.Sprintf("normal:%d", userID),
-					redis_rate.PerSecond(cfg.MaxRequestPerUserSecond))
+			if !util.FromIsAdminUser(ctx) { // 普通用户
+				allowed, err = redisRateLimiter.Allow(ctx, fmt.Sprintf("user_%d", userID),
+					redis_rate.PerSecond(cfg.UserLimit))
+			} else { // 管理员
+				allowed = true
 			}
 		} else { // 未登录用户
 			allowed, err = redisRateLimiter.Allow(ctx, c.ClientIP(),
-				redis_rate.PerMinute(cfg.MaxRequestPerIPMinute))
+				redis_rate.PerSecond(cfg.IPLimit))
 		}
 
 		if err != nil {
 			logging.Context(ctx).Error("限流器中间件出错", zap.Error(err))
 			util.ResError(c, errors.InternalServerError(""))
 		} else if allowed {
+			logging.Context(c.Request.Context()).Debug("限流器是否允许请求", zap.Bool("allowed", allowed))
 			c.Next()
 		} else {
 			util.ResError(c, errors.TooManyRequests(""))

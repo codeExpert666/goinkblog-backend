@@ -1,27 +1,4 @@
 definitions:
-  schema.AIConfig:
-    properties:
-      api_key:
-        type: string
-      endpoint:
-        type: string
-      model:
-        type: string
-      provider:
-        description: openai, local
-        type: string
-      temperature:
-        type: number
-    type: object
-  schema.AIResponse:
-    properties:
-      result:
-        type: string
-      suggestions:
-        items:
-          type: string
-        type: array
-    type: object
   schema.APIAccessTrendItem:
     properties:
       client_error_count:
@@ -34,6 +11,23 @@ definitions:
         type: integer
       total_count:
         type: integer
+    type: object
+  schema.ArticleCreationTimeStatsItem:
+    properties:
+      categories:
+        additionalProperties:
+          type: integer
+        type: object
+      count:
+        type: integer
+      date:
+        example: "2025-05-01"
+        type: string
+    type: object
+  schema.ArticleInteractionResponse:
+    properties:
+      interacted:
+        type: boolean
     type: object
   schema.ArticleListItem:
     properties:
@@ -72,7 +66,7 @@ definitions:
       tags:
         description: 标签列表
         items:
-          type: string
+          type: integer
         type: array
       title:
         type: string
@@ -134,7 +128,7 @@ definitions:
       tags:
         description: 标签列表
         items:
-          $ref: '#/definitions/schema.Tag'
+          type: integer
         type: array
       title:
         type: string
@@ -143,22 +137,78 @@ definitions:
       view_count:
         type: integer
     type: object
-  schema.ArticleStatisticResponse:
+  schema.ArticleVisitTrendItem:
     properties:
-      totalArticles:
+      date:
+        example: "2023-01-01"
+        type: string
+      visit_count:
         type: integer
-      totalComments:
-        type: integer
-      totalFavorites:
-        type: integer
-      totalLikes:
-        type: integer
-      totalViews:
-        type: integer
+    type: object
+  schema.AssistantResponse:
+    properties:
+      content:
+        description: 数据流内容
+        type: string
+      contents:
+        description: 非流式传输
+        items:
+          type: string
+        type: array
+      is_error:
+        description: 流式传输
+        type: boolean
     type: object
   schema.AvatarResponse:
     properties:
       url:
+        type: string
+    type: object
+  schema.CPUInfo:
+    properties:
+      cache_size:
+        description: CPU缓存大小（字节）
+        type: integer
+      cores:
+        description: CPU核心数
+        type: integer
+      frequency:
+        description: CPU频率（MHz）
+        type: number
+      model_name:
+        description: CPU型号信息
+        type: string
+      per_core_percent:
+        description: 每个CPU核心的使用率
+        items:
+          type: number
+        type: array
+      usage_percent:
+        description: CPU使用率（百分比）
+        type: number
+    type: object
+  schema.CacheInfo:
+    properties:
+      cache_type:
+        description: 缓存类型
+        type: string
+      connected_clients:
+        description: 已连接客户端数量
+        type: integer
+      hit_rate:
+        description: 命中率
+        type: number
+      key_count:
+        description: 键数量
+        type: integer
+      used_memory:
+        description: 已使用内存（字节）
+        type: integer
+      used_memory_peak:
+        description: 已使用内存峰值（字节）
+        type: integer
+      version:
+        description: 缓存版本
         type: string
     type: object
   schema.Captcha:
@@ -175,15 +225,28 @@ definitions:
     type: object
   schema.CategoryPaginationResult:
     properties:
+      categories_with_article:
+        description: 有文章的分类数量
+        type: integer
+      category_name_with_most_article:
+        description: 文章数量最多的分类名称
+        type: string
       items:
         items:
           $ref: '#/definitions/schema.CategoryResponse'
         type: array
+      most_article_counts:
+        description: 分类中最多的文章数量
+        type: integer
       page:
         type: integer
       page_size:
         type: integer
-      total:
+      total_articles:
+        description: 有分类的文章总数
+        type: integer
+      total_categories:
+        description: 分类总数
         type: integer
       total_pages:
         type: integer
@@ -223,6 +286,9 @@ definitions:
     properties:
       article_id:
         type: integer
+      article_title:
+        description: 文章标题
+        type: string
       author:
         description: 作者名称
         type: string
@@ -237,20 +303,143 @@ definitions:
         type: string
       id:
         type: integer
+      level:
+        description: 评论层级
+        type: integer
+      parent_author:
+        description: 父评论作者
+        type: string
+      parent_content:
+        description: 父评论内容
+        type: string
       parent_id:
         type: integer
-      replies:
-        description: 回复列表
-        items:
-          $ref: '#/definitions/schema.CommentResponse'
-        type: array
-      updated_at:
+      reply_count:
+        description: 回复数量
+        type: integer
+      review_remark:
+        description: 审核备注
         type: string
+      reviewed_at:
+        description: 审核时间
+        type: string
+      reviewer_avatar:
+        description: 审核员头像
+        type: string
+      reviewer_id:
+        description: 审核员ID
+        type: integer
+      reviewer_name:
+        description: 审核员名称
+        type: string
+      root_id:
+        description: 根评论ID
+        type: integer
+      status:
+        description: 审核状态
+        type: integer
+    type: object
+  schema.CommentStatisticResponse:
+    properties:
+      passed_comments:
+        type: integer
+      pending_comments:
+        type: integer
+      rejected_comments:
+        type: integer
+      total_comments:
+        type: integer
+    type: object
+  schema.CoverResponse:
+    properties:
+      url:
+        type: string
+    type: object
+  schema.DatabaseInfo:
+    properties:
+      active_transactions:
+        description: 活跃事务数量
+        type: integer
+      cache_hit_rate:
+        description: 缓存命中率（百分比）
+        type: number
+      db_size:
+        description: 数据库大小（字节）
+        type: integer
+      db_type:
+        description: 数据库类型
+        type: string
+      index_count:
+        description: 索引数量
+        type: integer
+      pool:
+        allOf:
+        - $ref: '#/definitions/schema.PoolStatus'
+        description: 连接池状态
+      qps:
+        description: 每秒查询数
+        type: number
+      slow_query_count:
+        description: 慢查询数量（最近1小时）
+        type: integer
+      slow_query_threshold:
+        description: 慢查询阈值（秒）
+        type: number
+      table_count:
+        description: 表数量
+        type: integer
+      uptime:
+        description: 数据库运行时间（秒）
+        type: integer
+      version:
+        description: 数据库版本
+        type: string
+    type: object
+  schema.DiskInfo:
+    properties:
+      io_counters_read_bytes:
+        description: 自系统启动以来读取的总字节数
+        type: integer
+      io_counters_read_count:
+        description: 自系统启动以来的读取操作总次数
+        type: integer
+      io_counters_write_bytes:
+        description: 自系统启动以来写入的总字节数
+        type: integer
+      io_counters_write_count:
+        description: 自系统启动以来的写入操作总次数
+        type: integer
+      partitions:
+        description: 磁盘分区信息
+        items:
+          $ref: '#/definitions/schema.PartitionInfo'
+        type: array
     type: object
   schema.EnforcerResponse:
     properties:
       allowed:
         type: boolean
+    type: object
+  schema.GoRuntimeInfo:
+    properties:
+      gc_count:
+        description: 自程序启动以来GC次数
+        type: integer
+      gc_pause_ns:
+        description: 最近一次GC暂停时间（纳秒）
+        type: integer
+      goroutines:
+        description: 当前goroutine数量
+        type: integer
+      heap_alloc:
+        description: 堆分配字节数
+        type: integer
+      heap_objects:
+        description: 堆对象数量
+        type: integer
+      version:
+        description: Go版本
+        type: string
     type: object
   schema.InteractionResponse:
     properties:
@@ -260,6 +449,36 @@ definitions:
       liked:
         description: 是否已点赞
         type: boolean
+    type: object
+  schema.ListModelsResponse:
+    properties:
+      models:
+        items:
+          $ref: '#/definitions/schema.Model'
+        type: array
+      page:
+        type: integer
+      page_size:
+        type: integer
+      total:
+        type: integer
+      total_pages:
+        type: integer
+    type: object
+  schema.ListPolicyResponse:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/schema.PolicyItem'
+        type: array
+      page:
+        type: integer
+      page_size:
+        type: integer
+      total:
+        type: integer
+      total_pages:
+        type: integer
     type: object
   schema.Logger:
     properties:
@@ -325,11 +544,172 @@ definitions:
       token_type:
         type: string
     type: object
-  schema.PolicyListItem:
+  schema.MemoryInfo:
+    properties:
+      available:
+        description: 可用内存（字节）
+        type: integer
+      swap_free:
+        description: 可用交换分区（字节）
+        type: integer
+      swap_total:
+        description: 交换分区总大小（字节）
+        type: integer
+      swap_usage_percent:
+        description: 交换分区使用率（百分比）
+        type: number
+      swap_used:
+        description: 交换分区已用（字节）
+        type: integer
+      total:
+        description: 总内存（字节）
+        type: integer
+      usage_percent:
+        description: 内存使用率（百分比）
+        type: number
+      used:
+        description: 已使用内存（字节）
+        type: integer
+    type: object
+  schema.Model:
+    properties:
+      active:
+        description: 是否激活
+        type: boolean
+      api_key:
+        description: API密钥
+        type: string
+      avg_latency:
+        description: 请求平均延迟（毫秒）
+        type: number
+      created_at:
+        description: 创建时间
+        type: string
+      current_tokens:
+        description: 当前可用令牌数
+        type: integer
+      description:
+        description: 描述
+        type: string
+      endpoint:
+        description: API端点
+        type: string
+      failure_count:
+        description: 失败请求数
+        type: integer
+      id:
+        description: 主键
+        type: integer
+      last_refill_time:
+        description: 上次令牌补充时间
+        type: string
+      model_name:
+        description: 模型名称
+        type: string
+      provider:
+        description: 提供商
+        type: string
+      rpm:
+        description: 每分钟最大请求数
+        type: integer
+      success_count:
+        description: 成功请求数
+        type: integer
+      temperature:
+        description: 温度参数
+        type: number
+      timeout:
+        description: 访问超时时间（秒）
+        type: integer
+      updated_at:
+        description: 更新时间
+        type: string
+      weight:
+        description: 令牌桶与加权轮询相关
+        type: integer
+    type: object
+  schema.ModelOverallStatsResponse:
+    properties:
+      active_models:
+        type: integer
+      fastest_model:
+        properties:
+          avg_latency:
+            type: number
+          id:
+            type: integer
+          model_name:
+            type: string
+          provider:
+            type: string
+        type: object
+      most_successful_model:
+        properties:
+          id:
+            type: integer
+          model_name:
+            type: string
+          provider:
+            type: string
+          success_rate:
+            description: 百分比形式
+            type: number
+        type: object
+      most_used_model:
+        properties:
+          id:
+            type: integer
+          model_name:
+            type: string
+          provider:
+            type: string
+          request_count:
+            type: integer
+        type: object
+      overall_avg_latency:
+        type: number
+      overall_success_rate:
+        description: 百分比形式
+        type: number
+      total_available_tokens:
+        type: integer
+      total_failure:
+        type: integer
+      total_models:
+        type: integer
+      total_requests:
+        type: integer
+      total_success:
+        type: integer
+    type: object
+  schema.PartitionInfo:
+    properties:
+      device:
+        description: 设备名称
+        type: string
+      free:
+        description: 可用空间（字节）
+        type: integer
+      fstype:
+        description: 文件系统类型
+        type: string
+      mountpoint:
+        description: 挂载点
+        type: string
+      total:
+        description: 总空间（字节）
+        type: integer
+      usage_percent:
+        description: 使用率（百分比）
+        type: number
+      used:
+        description: 已使用空间（字节）
+        type: integer
+    type: object
+  schema.PolicyItem:
     properties:
       action:
-        type: string
-      created_at:
+        description: Type 为 g 时，该项不存在
         type: string
       id:
         type: integer
@@ -340,25 +720,71 @@ definitions:
       type:
         type: string
     type: object
-  schema.PolicyListResponse:
+  schema.PoolStatus:
     properties:
-      items:
-        items:
-          $ref: '#/definitions/schema.PolicyListItem'
-        type: array
-      total:
+      idle:
+        description: 空闲连接数
+        type: integer
+      in_use:
+        description: 使用中的连接数
+        type: integer
+      max_idle:
+        description: 最大空闲连接数
+        type: integer
+      max_idle_time:
+        description: 最大空闲时间（秒）
+        type: integer
+      max_lifetime:
+        description: 连接生命周期（秒）
+        type: integer
+      max_open:
+        description: 最大连接数
+        type: integer
+      open:
+        description: 活跃连接数
+        type: integer
+      wait_count:
+        description: 等待连接数
         type: integer
     type: object
-  schema.Tag:
+  schema.SiteOverviewResponse:
     properties:
-      created_at:
-        type: string
-      id:
+      total_articles:
         type: integer
-      name:
+      total_comments:
+        type: integer
+      total_favorites:
+        type: integer
+      total_likes:
+        type: integer
+      total_users:
+        type: integer
+      total_views:
+        type: integer
+    type: object
+  schema.SystemInfo:
+    properties:
+      architecture:
+        description: 系统架构
         type: string
-      updated_at:
+      hostname:
+        description: 主机名
         type: string
+      kernel_version:
+        description: 内核版本
+        type: string
+      platform:
+        description: 平台信息
+        type: string
+      platform_version:
+        description: 平台版本
+        type: string
+      process_count:
+        description: 进程数量
+        type: integer
+      uptime:
+        description: 系统运行时间（秒）
+        type: integer
     type: object
   schema.TagPaginationResult:
     properties:
@@ -366,13 +792,21 @@ definitions:
         items:
           $ref: '#/definitions/schema.TagResponse'
         type: array
+      most_article_counts:
+        type: integer
       page:
         type: integer
       page_size:
         type: integer
-      total:
+      tag_name_with_most_article:
+        type: string
+      tags_with_article:
+        type: integer
+      total_articles:
         type: integer
       total_pages:
+        type: integer
+      total_tags:
         type: integer
     type: object
   schema.TagResponse:
@@ -394,6 +828,15 @@ definitions:
       date:
         type: string
       user_count:
+        type: integer
+    type: object
+  schema.UserArticleVisitTrendResponse:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/schema.ArticleVisitTrendItem'
+        type: array
+      total_visit:
         type: integer
     type: object
   schema.UserResponse:
@@ -432,7 +875,386 @@ info:
   title: GoInk Blog API
   version: v1.0.0
 paths:
-  /api/ai/config:
+  /api/ai/models:
+    get:
+      parameters:
+      - default: 1
+        description: 页码
+        in: query
+        minimum: 1
+        name: page
+        type: integer
+      - default: 10
+        description: 每页容量
+        in: query
+        maximum: 300
+        minimum: 1
+        name: page_size
+        type: integer
+      - description: 提供商
+        in: query
+        name: provider
+        type: string
+      - description: 模型名称
+        in: query
+        name: model
+        type: string
+      - description: 是否只显示激活的模型
+        enum:
+        - "true"
+        - "false"
+        in: query
+        name: active
+        type: string
+      - description: 如何按照模型权重排序
+        enum:
+        - desc
+        - asc
+        in: query
+        name: sort_by_weight
+        type: string
+      - description: 如何按照模型的每分钟最大请求数排序
+        enum:
+        - desc
+        - asc
+        in: query
+        name: sort_by_rpm
+        type: string
+      - description: 如何按照模型当前可用令牌数排序
+        enum:
+        - desc
+        - asc
+        in: query
+        name: sort_by_current_tokens
+        type: string
+      - description: 如何按照模型成功请求数排序
+        enum:
+        - desc
+        - asc
+        in: query
+        name: sort_by_success_count
+        type: string
+      - description: 如何按照模型失败请求数排序
+        enum:
+        - desc
+        - asc
+        in: query
+        name: sort_by_failure_count
+        type: string
+      - description: 如何按照模型请求平均延迟排序（注意：平均延迟为0表示尚不存在有效的延迟数据，该操作会剔除这类数据）
+        enum:
+        - desc
+        - asc
+        in: query
+        name: sort_by_avg_latency
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ResponseResult'
+            - properties:
+                data:
+                  $ref: '#/definitions/schema.ListModelsResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+      security:
+      - ApiKeyAuth: []
+      summary: 列出模型配置，支持分页和排序（仅管理员可用）
+      tags:
+      - AIAPI
+    post:
+      parameters:
+      - description: 提供商
+        in: body
+        name: provider
+        required: true
+        schema:
+          enum:
+          - openai
+          - local
+          type: string
+      - description: API密钥，当provider=openai时必需
+        in: body
+        name: api_key
+        schema:
+          type: string
+      - description: API端点，当provider=openai时必需，且须是有效的HTTP/HTTPS URL
+        format: url
+        in: body
+        name: endpoint
+        required: true
+        schema:
+          type: string
+      - description: 模型名称
+        in: body
+        name: model
+        required: true
+        schema:
+          type: string
+      - default: 0.7
+        description: 温度参数
+        in: body
+        maximum: 2
+        minimum: 0
+        name: temperature
+        schema:
+          type: number
+      - default: 30
+        description: 访问超时时间（秒）
+        in: body
+        maximum: 300
+        minimum: 1
+        name: timeout
+        schema:
+          type: integer
+      - default: false
+        description: 是否激活
+        in: body
+        name: active
+        schema:
+          type: boolean
+      - description: 描述
+        in: body
+        maxLength: 256
+        name: description
+        schema:
+          type: string
+      - default: 10
+        description: 每分钟最大请求数
+        in: body
+        minimum: 1
+        name: rpm
+        schema:
+          type: integer
+      - default: 100
+        description: 权重
+        in: body
+        minimum: 1
+        name: weight
+        schema:
+          type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ResponseResult'
+            - properties:
+                data:
+                  $ref: '#/definitions/schema.Model'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+      security:
+      - ApiKeyAuth: []
+      summary: 创建新的模型配置
+      tags:
+      - AIAPI
+  /api/ai/models/{id}:
+    delete:
+      parameters:
+      - description: 模型ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+      security:
+      - ApiKeyAuth: []
+      summary: 删除现有的模型配置
+      tags:
+      - AIAPI
+    get:
+      parameters:
+      - description: 模型ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ResponseResult'
+            - properties:
+                data:
+                  $ref: '#/definitions/schema.Model'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+      security:
+      - ApiKeyAuth: []
+      summary: 根据ID获取模型配置（仅管理员可用）
+      tags:
+      - AIAPI
+    put:
+      parameters:
+      - description: 模型ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 提供商
+        in: body
+        name: provider
+        schema:
+          enum:
+          - openai
+          - local
+          type: string
+      - description: API密钥，当provider=openai时必需
+        in: body
+        name: api_key
+        schema:
+          type: string
+      - description: API端点，当provider=openai时必需，且须是有效的HTTP/HTTPS URL
+        format: url
+        in: body
+        name: endpoint
+        schema:
+          type: string
+      - description: 模型名称
+        in: body
+        name: model
+        schema:
+          type: string
+      - description: 温度参数
+        in: body
+        maximum: 2
+        minimum: 0
+        name: temperature
+        schema:
+          type: number
+      - description: 访问超时时间（秒）
+        in: body
+        maximum: 300
+        minimum: 1
+        name: timeout
+        schema:
+          type: integer
+      - description: 是否激活
+        in: body
+        name: active
+        schema:
+          type: boolean
+      - description: 描述
+        in: body
+        maxLength: 256
+        name: description
+        schema:
+          type: string
+      - description: 每分钟最大请求数
+        in: body
+        minimum: 1
+        name: rpm
+        schema:
+          type: integer
+      - description: 权重
+        in: body
+        minimum: 1
+        name: weight
+        schema:
+          type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ResponseResult'
+            - properties:
+                data:
+                  $ref: '#/definitions/schema.Model'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+      security:
+      - ApiKeyAuth: []
+      summary: 更新现有的模型配置
+      tags:
+      - AIAPI
+  /api/ai/models/{id}/reset:
+    post:
+      parameters:
+      - description: 模型ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+      security:
+      - ApiKeyAuth: []
+      summary: 重置特定模型的使用统计信息
+      tags:
+      - AIAPI
+  /api/ai/models/overview:
     get:
       responses:
         "200":
@@ -442,134 +1264,120 @@ paths:
             - $ref: '#/definitions/util.ResponseResult'
             - properties:
                 data:
-                  $ref: '#/definitions/schema.AIConfig'
+                  $ref: '#/definitions/schema.ModelOverallStatsResponse'
               type: object
       security:
       - ApiKeyAuth: []
-      summary: 获取 AI 配置（仅管理员可用）
+      summary: 获取所有AI模型的总体统计信息，适合仪表板展示
       tags:
       - AIAPI
-    put:
-      parameters:
-      - description: AI 提供商
-        in: body
-        name: provider
-        schema:
-          type: string
-      - description: AI API 密钥
-        in: body
-        name: api_key
-        schema:
-          type: string
-      - description: AI API 端点
-        in: body
-        name: endpoint
-        schema:
-          type: string
-      - description: AI 模型
-        in: body
-        name: model
-        schema:
-          type: string
-      - description: AI 温度
-        in: body
-        maximum: 2
-        minimum: 0
-        name: temperature
-        schema:
-          type: number
+  /api/ai/models/reset:
+    post:
       responses:
         "200":
           description: OK
           schema:
-            allOf:
-            - $ref: '#/definitions/util.ResponseResult'
-            - properties:
-                data:
-                  $ref: '#/definitions/schema.AIConfig'
-              type: object
-        "400":
-          description: Bad Request
+            $ref: '#/definitions/util.ResponseResult'
+        "500":
+          description: Internal Server Error
           schema:
             $ref: '#/definitions/util.ResponseResult'
       security:
       - ApiKeyAuth: []
-      summary: 更新 AI 配置（仅管理员可用）
+      summary: 重置所有模型的使用统计信息
       tags:
       - AIAPI
   /api/ai/polish:
     post:
+      consumes:
+      - application/json
       parameters:
-      - description: 原始文章内容
+      - description: 文章内容
         in: body
-        name: content
+        name: article_content
         required: true
         schema:
           type: string
+      produces:
+      - text/event-stream
       responses:
         "200":
-          description: OK
+          description: 流式返回润色后的文章内容
           schema:
-            allOf:
-            - $ref: '#/definitions/util.ResponseResult'
-            - properties:
-                data:
-                  $ref: '#/definitions/schema.AIResponse'
-              type: object
+            type: string
         "400":
           description: Bad Request
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+        "429":
+          description: Too Many Requests
           schema:
             $ref: '#/definitions/util.ResponseResult'
         "500":
           description: Internal Server Error
           schema:
             $ref: '#/definitions/util.ResponseResult'
+        "503":
+          description: Service Unavailable
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
       security:
       - ApiKeyAuth: []
-      summary: 文章润色
+      summary: 使用AI助手润色文章
       tags:
       - AIAPI
   /api/ai/summary:
     post:
+      consumes:
+      - application/json
       parameters:
-      - description: 原始文章内容
+      - description: 文章内容
         in: body
-        name: content
+        name: article_content
         required: true
         schema:
           type: string
+      produces:
+      - text/event-stream
       responses:
         "200":
-          description: OK
+          description: 流式返回生成的文章摘要
           schema:
-            allOf:
-            - $ref: '#/definitions/util.ResponseResult'
-            - properties:
-                data:
-                  $ref: '#/definitions/schema.AIResponse'
-              type: object
+            type: string
         "400":
           description: Bad Request
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+        "429":
+          description: Too Many Requests
           schema:
             $ref: '#/definitions/util.ResponseResult'
         "500":
           description: Internal Server Error
           schema:
             $ref: '#/definitions/util.ResponseResult'
+        "503":
+          description: Service Unavailable
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
       security:
       - ApiKeyAuth: []
-      summary: 生成摘要
+      summary: 使用AI助手为文章生成摘要
       tags:
       - AIAPI
-  /api/ai/tags:
+  /api/ai/tag:
     post:
+      consumes:
+      - application/json
       parameters:
-      - description: 原始文章内容
+      - description: 文章内容
         in: body
-        name: content
+        name: article_content
         required: true
         schema:
           type: string
+      produces:
+      - application/json
       responses:
         "200":
           description: OK
@@ -578,30 +1386,42 @@ paths:
             - $ref: '#/definitions/util.ResponseResult'
             - properties:
                 data:
-                  $ref: '#/definitions/schema.AIResponse'
+                  $ref: '#/definitions/schema.AssistantResponse'
               type: object
         "400":
           description: Bad Request
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+        "429":
+          description: Too Many Requests
           schema:
             $ref: '#/definitions/util.ResponseResult'
         "500":
           description: Internal Server Error
           schema:
             $ref: '#/definitions/util.ResponseResult'
+        "503":
+          description: Service Unavailable
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
       security:
       - ApiKeyAuth: []
-      summary: 推荐标签
+      summary: 使用AI助手为文章生成6个标签
       tags:
       - AIAPI
   /api/ai/title:
     post:
+      consumes:
+      - application/json
       parameters:
-      - description: 原始文章内容
+      - description: 文章内容
         in: body
-        name: content
+        name: article_content
         required: true
         schema:
           type: string
+      produces:
+      - application/json
       responses:
         "200":
           description: OK
@@ -610,19 +1430,27 @@ paths:
             - $ref: '#/definitions/util.ResponseResult'
             - properties:
                 data:
-                  $ref: '#/definitions/schema.AIResponse'
+                  $ref: '#/definitions/schema.AssistantResponse'
               type: object
         "400":
           description: Bad Request
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+        "429":
+          description: Too Many Requests
           schema:
             $ref: '#/definitions/util.ResponseResult'
         "500":
           description: Internal Server Error
           schema:
             $ref: '#/definitions/util.ResponseResult'
+        "503":
+          description: Service Unavailable
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
       security:
       - ApiKeyAuth: []
-      summary: 生成标题建议
+      summary: 使用AI助手为文章生成5个标题
       tags:
       - AIAPI
   /api/auth/avatar:
@@ -856,19 +1684,19 @@ paths:
   /api/auth/rbac/enforce:
     post:
       parameters:
-      - description: 主体(用户或角色)
+      - description: 主体
         in: body
         name: subject
         required: true
         schema:
           type: string
-      - description: 对象(资源)
+      - description: 资源
         in: body
         name: object
         required: true
         schema:
           type: string
-      - description: 动作(操作)
+      - description: 动作
         in: body
         name: action
         required: true
@@ -920,15 +1748,15 @@ paths:
         in: query
         name: type
         type: string
-      - description: 主体(用户或角色)
+      - description: 主体
         in: query
         name: subject
         type: string
-      - description: 对象(资源)
+      - description: 资源或角色，若策略类型为p，则为资源；若策略类型为g，则为角色
         in: query
         name: object
         type: string
-      - description: 动作(操作)
+      - description: 动作，策略类型为g时，该请求参数无效
         in: query
         name: action
         type: string
@@ -940,7 +1768,7 @@ paths:
             - $ref: '#/definitions/util.ResponseResult'
             - properties:
                 data:
-                  $ref: '#/definitions/schema.PolicyListResponse'
+                  $ref: '#/definitions/schema.ListPolicyResponse'
               type: object
         "400":
           description: Bad Request
@@ -956,26 +1784,69 @@ paths:
       tags:
       - RBACAPI
   /api/auth/rbac/policy:
-    delete:
+    post:
       parameters:
-      - description: 主体(用户或角色)
+      - description: 策略类型(p或g)
+        in: body
+        name: type
+        required: true
+        schema:
+          enum:
+          - p
+          - g
+          type: string
+      - description: 主体
         in: body
         name: subject
         required: true
         schema:
           type: string
-      - description: 对象(资源)
+      - description: 资源或角色，若策略类型为p，则为资源；若策略类型为g，则为角色
         in: body
         name: object
         required: true
         schema:
           type: string
-      - description: 动作(操作)
+      - description: 动作，策略类型为p时必需
         in: body
         name: action
-        required: true
         schema:
           type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ResponseResult'
+            - properties:
+                data:
+                  $ref: '#/definitions/schema.PolicyItem'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+        "409":
+          description: 策略已存在
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+      security:
+      - ApiKeyAuth: []
+      summary: 添加策略（仅管理员可用）
+      tags:
+      - RBACAPI
+  /api/auth/rbac/policy/{id}:
+    delete:
+      parameters:
+      - description: 策略ID
+        in: path
+        name: id
+        required: true
+        type: integer
       responses:
         "200":
           description: OK
@@ -996,253 +1867,6 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: 移除策略（仅管理员可用）
-      tags:
-      - RBACAPI
-    post:
-      parameters:
-      - description: 主体(用户或角色)
-        in: body
-        name: subject
-        required: true
-        schema:
-          type: string
-      - description: 对象(资源)
-        in: body
-        name: object
-        required: true
-        schema:
-          type: string
-      - description: 动作(操作)
-        in: body
-        name: action
-        required: true
-        schema:
-          type: string
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/util.ResponseResult'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/util.ResponseResult'
-        "409":
-          description: 策略已存在
-          schema:
-            $ref: '#/definitions/util.ResponseResult'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/util.ResponseResult'
-      security:
-      - ApiKeyAuth: []
-      summary: 添加策略（仅管理员可用）
-      tags:
-      - RBACAPI
-  /api/auth/rbac/reload:
-    post:
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/util.ResponseResult'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/util.ResponseResult'
-      security:
-      - ApiKeyAuth: []
-      summary: 重新加载策略（仅管理员可用）
-      tags:
-      - RBACAPI
-  /api/auth/rbac/role:
-    delete:
-      parameters:
-      - description: 角色
-        in: body
-        name: role
-        required: true
-        schema:
-          type: string
-      - description: 用户
-        in: body
-        name: user
-        required: true
-        schema:
-          type: string
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/util.ResponseResult'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/util.ResponseResult'
-        "404":
-          description: 用户角色关系不存在
-          schema:
-            $ref: '#/definitions/util.ResponseResult'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/util.ResponseResult'
-      security:
-      - ApiKeyAuth: []
-      summary: 为用户移除角色（仅管理员可用）
-      tags:
-      - RBACAPI
-    post:
-      parameters:
-      - description: 角色
-        in: body
-        name: role
-        required: true
-        schema:
-          type: string
-      - description: 用户
-        in: body
-        name: user
-        required: true
-        schema:
-          type: string
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/util.ResponseResult'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/util.ResponseResult'
-        "409":
-          description: 用户角色关系已存在
-          schema:
-            $ref: '#/definitions/util.ResponseResult'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/util.ResponseResult'
-      security:
-      - ApiKeyAuth: []
-      summary: 为用户添加角色（仅管理员可用）
-      tags:
-      - RBACAPI
-  /api/auth/rbac/role/{role}/users:
-    get:
-      parameters:
-      - description: 角色名
-        in: path
-        name: role
-        required: true
-        type: string
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ResponseResult'
-            - properties:
-                data:
-                  additionalProperties:
-                    items:
-                      allOf:
-                      - type: string
-                      - properties:
-                          users:
-                            items:
-                              type: string
-                            type: array
-                        type: object
-                    type: array
-                  type: object
-              type: object
-        "400":
-          description: 角色名不能为空
-          schema:
-            $ref: '#/definitions/util.ResponseResult'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/util.ResponseResult'
-      security:
-      - ApiKeyAuth: []
-      summary: 获取具有指定角色的所有用户（仅管理员可用）
-      tags:
-      - RBACAPI
-  /api/auth/rbac/roles:
-    get:
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ResponseResult'
-            - properties:
-                data:
-                  additionalProperties:
-                    items:
-                      allOf:
-                      - type: string
-                      - properties:
-                          roles:
-                            items:
-                              type: string
-                            type: array
-                        type: object
-                    type: array
-                  type: object
-              type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/util.ResponseResult'
-      security:
-      - ApiKeyAuth: []
-      summary: 获取所有角色（仅管理员可用）
-      tags:
-      - RBACAPI
-  /api/auth/rbac/user/{user}/roles:
-    get:
-      parameters:
-      - description: 用户名
-        in: path
-        name: user
-        required: true
-        type: string
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/util.ResponseResult'
-            - properties:
-                data:
-                  additionalProperties:
-                    items:
-                      allOf:
-                      - type: string
-                      - properties:
-                          roles:
-                            items:
-                              type: string
-                            type: array
-                        type: object
-                    type: array
-                  type: object
-              type: object
-        "400":
-          description: 用户名不能为空
-          schema:
-            $ref: '#/definitions/util.ResponseResult'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/util.ResponseResult'
-      security:
-      - ApiKeyAuth: []
-      summary: 获取用户的所有角色（仅管理员可用）
       tags:
       - RBACAPI
   /api/auth/register:
@@ -1327,11 +1951,10 @@ paths:
         minimum: 1
         name: tag_ids
         type: array
-      - description: 作者ID
+      - description: 作者名称（current 表示当前用户）
         in: query
-        minimum: 1
-        name: author_id
-        type: integer
+        name: author
+        type: string
       - description: 状态
         enum:
         - published
@@ -1340,18 +1963,30 @@ paths:
         name: status
         type: string
       - default: newest
-        description: 排序方式
+        description: 排序依据
         enum:
         - newest
-        - popular
-        - most_commented
-        - most_liked
+        - views
+        - likes
+        - favorites
+        - comments
         in: query
         name: sort_by
         type: string
       - description: 搜索关键词
         in: query
         name: keyword
+        type: string
+      - default: all
+        description: 创建时间范围
+        enum:
+        - today
+        - week
+        - month
+        - year
+        - all
+        in: query
+        name: time_range
         type: string
       responses:
         "200":
@@ -1365,10 +2000,6 @@ paths:
               type: object
         "400":
           description: Bad Request
-          schema:
-            $ref: '#/definitions/util.ResponseResult'
-        "404":
-          description: Not Found
           schema:
             $ref: '#/definitions/util.ResponseResult'
         "500":
@@ -1607,14 +2238,7 @@ paths:
             - $ref: '#/definitions/util.ResponseResult'
             - properties:
                 data:
-                  additionalProperties:
-                    allOf:
-                    - type: boolean
-                    - properties:
-                        favorited:
-                          type: boolean
-                      type: object
-                  type: object
+                  $ref: '#/definitions/schema.ArticleInteractionResponse'
               type: object
         "400":
           description: Bad Request
@@ -1645,14 +2269,7 @@ paths:
             - $ref: '#/definitions/util.ResponseResult'
             - properties:
                 data:
-                  additionalProperties:
-                    allOf:
-                    - type: boolean
-                    - properties:
-                        liked:
-                          type: boolean
-                      type: object
-                  type: object
+                  $ref: '#/definitions/schema.ArticleInteractionResponse'
               type: object
         "400":
           description: Bad Request
@@ -1905,14 +2522,7 @@ paths:
             - $ref: '#/definitions/util.ResponseResult'
             - properties:
                 data:
-                  additionalProperties:
-                    allOf:
-                    - type: string
-                    - properties:
-                        url:
-                          type: string
-                      type: object
-                  type: object
+                  $ref: '#/definitions/schema.CoverResponse'
               type: object
         "400":
           description: Bad Request
@@ -1945,7 +2555,7 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/util.ResponseResult'
-      summary: 获取所有分类
+      summary: 获取所有分类（目前该 API 没用上）
       tags:
       - CategoryAPI
     post:
@@ -2113,6 +2723,34 @@ paths:
         minimum: 1
         name: page_size
         type: integer
+      - description: 如何按照分类ID排序
+        enum:
+        - desc
+        - asc
+        in: query
+        name: sort_by_id
+        type: string
+      - description: 如何按照分类的文章数量排序
+        enum:
+        - desc
+        - asc
+        in: query
+        name: sort_by_article_count
+        type: string
+      - description: 如何按照创建时间排序
+        enum:
+        - desc
+        - asc
+        in: query
+        name: sort_by_create
+        type: string
+      - description: 如何按照更新时间排序
+        enum:
+        - desc
+        - asc
+        in: query
+        name: sort_by_update
+        type: string
       responses:
         "200":
           description: OK
@@ -2340,6 +2978,34 @@ paths:
         minimum: 1
         name: page_size
         type: integer
+      - description: 如何按照标签ID排序
+        enum:
+        - desc
+        - asc
+        in: query
+        name: sort_by_id
+        type: string
+      - description: 如何按照标签的文章数量排序
+        enum:
+        - desc
+        - asc
+        in: query
+        name: sort_by_article_count
+        type: string
+      - description: 如何按照创建时间排序
+        enum:
+        - desc
+        - asc
+        in: query
+        name: sort_by_create
+        type: string
+      - description: 如何按照更新时间排序
+        enum:
+        - desc
+        - asc
+        in: query
+        name: sort_by_update
+        type: string
       responses:
         "200":
           description: OK
@@ -2411,7 +3077,7 @@ paths:
             $ref: '#/definitions/util.ResponseResult'
       security:
       - ApiKeyAuth: []
-      summary: 创建评论
+      summary: 创建评论（会增加文章评论数、响应刚创建评论的全部信息）
       tags:
       - CommentAPI
   /api/comment/{id}:
@@ -2446,7 +3112,7 @@ paths:
             $ref: '#/definitions/util.ResponseResult'
       security:
       - ApiKeyAuth: []
-      summary: 删除评论
+      summary: 删除评论（回复也会被删除、文章评论数也会减少）
       tags:
       - CommentAPI
     get:
@@ -2504,6 +3170,25 @@ paths:
         minimum: 1
         name: page_size
         type: integer
+      - default: false
+        description: 是否包含回复的回复
+        in: query
+        name: include_replies
+        type: boolean
+      - default: 0
+        description: 回复层数限制，i (i>0) 表示获取到第 i 层回复，0表示不限制
+        in: query
+        minimum: 0
+        name: max_depth
+        type: integer
+      - default: asc
+        description: 排序方式
+        enum:
+        - asc
+        - desc
+        in: query
+        name: sort_by_create
+        type: string
       responses:
         "200":
           description: OK
@@ -2518,11 +3203,15 @@ paths:
           description: Bad Request
           schema:
             $ref: '#/definitions/util.ResponseResult'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
         "500":
           description: Internal Server Error
           schema:
             $ref: '#/definitions/util.ResponseResult'
-      summary: 获取评论的回复
+      summary: 获取顶级评论的所有回复（扁平化列表，适合前端显示）
       tags:
       - CommentAPI
   /api/comment/article/{article_id}:
@@ -2531,7 +3220,7 @@ paths:
       - description: 文章ID
         in: path
         minimum: 1
-        name: articleId
+        name: article_id
         required: true
         type: integer
       - default: 1
@@ -2547,6 +3236,14 @@ paths:
         minimum: 1
         name: page_size
         type: integer
+      - default: desc
+        description: 排序方式
+        enum:
+        - asc
+        - desc
+        in: query
+        name: sort_by_create
+        type: string
       responses:
         "200":
           description: OK
@@ -2565,7 +3262,161 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/util.ResponseResult'
-      summary: 获取文章评论
+      summary: 获取文章的顶级评论
+      tags:
+      - CommentAPI
+  /api/comment/review:
+    get:
+      parameters:
+      - description: 文章ID
+        in: query
+        name: article_id
+        type: integer
+      - description: 评论作者ID
+        in: query
+        name: author_id
+        type: integer
+      - description: 父评论ID
+        in: query
+        name: parent_id
+        type: integer
+      - description: 根评论ID
+        in: query
+        name: root_id
+        type: integer
+      - description: 评论层级
+        in: query
+        name: level
+        type: integer
+      - description: 评论状态：0-待审核，1-已通过，2-已拒绝
+        enum:
+        - 0
+        - 1
+        - 2
+        in: query
+        name: status
+        type: integer
+      - description: 关键词
+        in: query
+        name: keyword
+        type: string
+      - description: 创建开始时间，格式：2006-01-02 15:04:05
+        in: query
+        name: create_start_time
+        type: string
+      - description: 创建结束时间，格式：2006-01-02 15:04:05
+        in: query
+        name: create_end_time
+        type: string
+      - description: 审核开始时间，格式：2006-01-02 15:04:05
+        in: query
+        name: review_start_time
+        type: string
+      - description: 审核结束时间，格式：2006-01-02 15:04:05
+        in: query
+        name: review_end_time
+        type: string
+      - description: 审核人员ID
+        in: query
+        name: reviewer_id
+        type: integer
+      - default: create
+        description: 排序字段：create-创建时间，review-审核时间
+        enum:
+        - create
+        - review
+        in: query
+        name: sort_by
+        type: string
+      - default: desc
+        description: 排序方式：desc-降序，asc-升序
+        enum:
+        - desc
+        - asc
+        in: query
+        name: sort_order
+        type: string
+      - default: 1
+        description: 页码
+        in: query
+        minimum: 1
+        name: page
+        required: true
+        type: integer
+      - default: 10
+        description: 页容量
+        in: query
+        maximum: 100
+        minimum: 1
+        name: page_size
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ResponseResult'
+            - properties:
+                data:
+                  $ref: '#/definitions/schema.CommentPaginationResult'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取评论列表（适用于审核和管理，仅管理员可用）
+      tags:
+      - CommentAPI
+    post:
+      parameters:
+      - description: 评论ID
+        in: body
+        minimum: 1
+        name: comment_id
+        required: true
+        schema:
+          type: integer
+      - description: 审核状态：1-通过，2-拒绝
+        in: body
+        name: status
+        required: true
+        schema:
+          enum:
+          - 1
+          - 2
+          type: integer
+      - description: 审核备注
+        in: body
+        name: review_remark
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+      security:
+      - ApiKeyAuth: []
+      summary: 审核评论（仅管理员可用）
       tags:
       - CommentAPI
   /api/comment/user:
@@ -2641,7 +3492,41 @@ paths:
       summary: 获取用户活跃度数据（仅管理员可用）
       tags:
       - StatAPI
-  /api/stat/articles:
+  /api/stat/articles/creation:
+    get:
+      parameters:
+      - default: 30
+        description: 天数
+        in: query
+        minimum: 1
+        name: days
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ResponseResult'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/schema.ArticleCreationTimeStatsItem'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取文章创作时间统计（仅管理员可用）
+      tags:
+      - StatAPI
+  /api/stat/cache:
     get:
       responses:
         "200":
@@ -2651,11 +3536,11 @@ paths:
             - $ref: '#/definitions/util.ResponseResult'
             - properties:
                 data:
-                  $ref: '#/definitions/schema.ArticleStatisticResponse'
+                  $ref: '#/definitions/schema.CacheInfo'
               type: object
       security:
       - ApiKeyAuth: []
-      summary: 获取文章统计信息（仅管理员可用）
+      summary: 获取缓存信息（仅管理员可用）
       tags:
       - StatAPI
   /api/stat/categories:
@@ -2679,6 +3564,91 @@ paths:
       summary: 获取文章分类分布
       tags:
       - StatAPI
+  /api/stat/comments:
+    get:
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ResponseResult'
+            - properties:
+                data:
+                  $ref: '#/definitions/schema.CommentStatisticResponse'
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: 获取所有评论的统计数据（仅管理员可用）
+      tags:
+      - StatAPI
+  /api/stat/cpu:
+    get:
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ResponseResult'
+            - properties:
+                data:
+                  $ref: '#/definitions/schema.CPUInfo'
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: 获取 CPU 信息（仅管理员可用）
+      tags:
+      - StatAPI
+  /api/stat/db:
+    get:
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ResponseResult'
+            - properties:
+                data:
+                  $ref: '#/definitions/schema.DatabaseInfo'
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: 获取数据库信息（仅管理员可用）
+      tags:
+      - StatAPI
+  /api/stat/disk:
+    get:
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ResponseResult'
+            - properties:
+                data:
+                  $ref: '#/definitions/schema.DiskInfo'
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: 获取硬盘信息（仅管理员可用）
+      tags:
+      - StatAPI
+  /api/stat/go:
+    get:
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ResponseResult'
+            - properties:
+                data:
+                  $ref: '#/definitions/schema.GoRuntimeInfo'
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: 获取 GO 运行时信息（仅管理员可用）
+      tags:
+      - StatAPI
   /api/stat/logger:
     get:
       parameters:
@@ -2691,11 +3661,19 @@ paths:
       - default: 10
         description: 每页容量
         in: query
-        maximum: 30
+        maximum: 100
         minimum: 1
         name: page_size
         type: integer
       - description: 日志级别
+        enum:
+        - debug
+        - info
+        - warn
+        - error
+        - dpanic
+        - panic
+        - fatal
         in: query
         name: level
         type: string
@@ -2708,6 +3686,15 @@ paths:
         name: username
         type: string
       - description: 日志标签
+        enum:
+        - main
+        - recovery
+        - request
+        - login
+        - logout
+        - system
+        - operate
+        - ai
         in: query
         name: tag
         type: string
@@ -2748,6 +3735,129 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: 获取日志列表（仅管理员可用）
+      tags:
+      - StatAPI
+  /api/stat/memory:
+    get:
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ResponseResult'
+            - properties:
+                data:
+                  $ref: '#/definitions/schema.MemoryInfo'
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: 获取内存信息（仅管理员可用）
+      tags:
+      - StatAPI
+  /api/stat/overview:
+    get:
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ResponseResult'
+            - properties:
+                data:
+                  $ref: '#/definitions/schema.SiteOverviewResponse'
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: 获取站点概览统计信息（仅管理员可用）
+      tags:
+      - StatAPI
+  /api/stat/system:
+    get:
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ResponseResult'
+            - properties:
+                data:
+                  $ref: '#/definitions/schema.SystemInfo'
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: 获取系统信息（仅管理员可用）
+      tags:
+      - StatAPI
+  /api/stat/user/articles:
+    get:
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ResponseResult'
+            - properties:
+                data:
+                  $ref: '#/definitions/schema.SiteOverviewResponse'
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: 获取用户文章统计信息
+      tags:
+      - StatAPI
+  /api/stat/user/articles/visits:
+    get:
+      parameters:
+      - default: 7
+        description: 天数
+        in: query
+        minimum: 1
+        name: days
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ResponseResult'
+            - properties:
+                data:
+                  $ref: '#/definitions/schema.UserArticleVisitTrendResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取用户文章访问趋势
+      tags:
+      - StatAPI
+  /api/stat/user/categories:
+    get:
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ResponseResult'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/schema.CategoryDistItem'
+                  type: array
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/util.ResponseResult'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取用户文章分类分布
       tags:
       - StatAPI
   /api/stat/visits:

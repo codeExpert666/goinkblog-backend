@@ -15,7 +15,7 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/api/ai/config": {
+        "/api/ai/models": {
             "get": {
                 "security": [
                     {
@@ -25,7 +25,108 @@ const docTemplate = `{
                 "tags": [
                     "AIAPI"
                 ],
-                "summary": "获取 AI 配置（仅管理员可用）",
+                "summary": "列出模型配置，支持分页和排序（仅管理员可用）",
+                "parameters": [
+                    {
+                        "minimum": 1,
+                        "type": "integer",
+                        "default": 1,
+                        "description": "页码",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "maximum": 300,
+                        "minimum": 1,
+                        "type": "integer",
+                        "default": 10,
+                        "description": "每页容量",
+                        "name": "page_size",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "提供商",
+                        "name": "provider",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "模型名称",
+                        "name": "model",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "true",
+                            "false"
+                        ],
+                        "type": "string",
+                        "description": "是否只显示激活的模型",
+                        "name": "active",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "desc",
+                            "asc"
+                        ],
+                        "type": "string",
+                        "description": "如何按照模型权重排序",
+                        "name": "sort_by_weight",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "desc",
+                            "asc"
+                        ],
+                        "type": "string",
+                        "description": "如何按照模型的每分钟最大请求数排序",
+                        "name": "sort_by_rpm",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "desc",
+                            "asc"
+                        ],
+                        "type": "string",
+                        "description": "如何按照模型当前可用令牌数排序",
+                        "name": "sort_by_current_tokens",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "desc",
+                            "asc"
+                        ],
+                        "type": "string",
+                        "description": "如何按照模型成功请求数排序",
+                        "name": "sort_by_success_count",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "desc",
+                            "asc"
+                        ],
+                        "type": "string",
+                        "description": "如何按照模型失败请求数排序",
+                        "name": "sort_by_failure_count",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "desc",
+                            "asc"
+                        ],
+                        "type": "string",
+                        "description": "如何按照模型请求平均延迟排序（注意：平均延迟为0表示尚不存在有效的延迟数据，该操作会剔除这类数据）",
+                        "name": "sort_by_avg_latency",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -38,11 +139,294 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/schema.AIConfig"
+                                            "$ref": "#/definitions/schema.ListModelsResponse"
                                         }
                                     }
                                 }
                             ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/util.ResponseResult"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/util.ResponseResult"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "tags": [
+                    "AIAPI"
+                ],
+                "summary": "创建新的模型配置",
+                "parameters": [
+                    {
+                        "description": "提供商",
+                        "name": "provider",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "openai",
+                                "local"
+                            ]
+                        }
+                    },
+                    {
+                        "description": "API密钥，当provider=openai时必需",
+                        "name": "api_key",
+                        "in": "body",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "format": "url",
+                        "description": "API端点，当provider=openai时必需，且须是有效的HTTP/HTTPS URL",
+                        "name": "endpoint",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "模型名称",
+                        "name": "model",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "maximum": 2,
+                        "minimum": 0,
+                        "default": 0.7,
+                        "description": "温度参数",
+                        "name": "temperature",
+                        "in": "body",
+                        "schema": {
+                            "type": "number"
+                        }
+                    },
+                    {
+                        "maximum": 300,
+                        "minimum": 1,
+                        "default": 30,
+                        "description": "访问超时时间（秒）",
+                        "name": "timeout",
+                        "in": "body",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "default": false,
+                        "description": "是否激活",
+                        "name": "active",
+                        "in": "body",
+                        "schema": {
+                            "type": "boolean"
+                        }
+                    },
+                    {
+                        "maxLength": 256,
+                        "description": "描述",
+                        "name": "description",
+                        "in": "body",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "minimum": 1,
+                        "default": 10,
+                        "description": "每分钟最大请求数",
+                        "name": "rpm",
+                        "in": "body",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "minimum": 1,
+                        "default": 100,
+                        "description": "权重",
+                        "name": "weight",
+                        "in": "body",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.ResponseResult"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/schema.Model"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/util.ResponseResult"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/util.ResponseResult"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/util.ResponseResult"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/ai/models/overview": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "tags": [
+                    "AIAPI"
+                ],
+                "summary": "获取所有AI模型的总体统计信息，适合仪表板展示",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.ResponseResult"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/schema.ModelOverallStatsResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/api/ai/models/reset": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "tags": [
+                    "AIAPI"
+                ],
+                "summary": "重置所有模型的使用统计信息",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/util.ResponseResult"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/util.ResponseResult"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/ai/models/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "tags": [
+                    "AIAPI"
+                ],
+                "summary": "根据ID获取模型配置（仅管理员可用）",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "模型ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.ResponseResult"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/schema.Model"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/util.ResponseResult"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/util.ResponseResult"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/util.ResponseResult"
                         }
                     }
                 }
@@ -56,18 +440,29 @@ const docTemplate = `{
                 "tags": [
                     "AIAPI"
                 ],
-                "summary": "更新 AI 配置（仅管理员可用）",
+                "summary": "更新现有的模型配置",
                 "parameters": [
                     {
-                        "description": "AI 提供商",
+                        "type": "integer",
+                        "description": "模型ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "提供商",
                         "name": "provider",
                         "in": "body",
                         "schema": {
-                            "type": "string"
+                            "type": "string",
+                            "enum": [
+                                "openai",
+                                "local"
+                            ]
                         }
                     },
                     {
-                        "description": "AI API 密钥",
+                        "description": "API密钥，当provider=openai时必需",
                         "name": "api_key",
                         "in": "body",
                         "schema": {
@@ -75,7 +470,8 @@ const docTemplate = `{
                         }
                     },
                     {
-                        "description": "AI API 端点",
+                        "format": "url",
+                        "description": "API端点，当provider=openai时必需，且须是有效的HTTP/HTTPS URL",
                         "name": "endpoint",
                         "in": "body",
                         "schema": {
@@ -83,7 +479,7 @@ const docTemplate = `{
                         }
                     },
                     {
-                        "description": "AI 模型",
+                        "description": "模型名称",
                         "name": "model",
                         "in": "body",
                         "schema": {
@@ -93,11 +489,56 @@ const docTemplate = `{
                     {
                         "maximum": 2,
                         "minimum": 0,
-                        "description": "AI 温度",
+                        "description": "温度参数",
                         "name": "temperature",
                         "in": "body",
                         "schema": {
                             "type": "number"
+                        }
+                    },
+                    {
+                        "maximum": 300,
+                        "minimum": 1,
+                        "description": "访问超时时间（秒）",
+                        "name": "timeout",
+                        "in": "body",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "description": "是否激活",
+                        "name": "active",
+                        "in": "body",
+                        "schema": {
+                            "type": "boolean"
+                        }
+                    },
+                    {
+                        "maxLength": 256,
+                        "description": "描述",
+                        "name": "description",
+                        "in": "body",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "minimum": 1,
+                        "description": "每分钟最大请求数",
+                        "name": "rpm",
+                        "in": "body",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "minimum": 1,
+                        "description": "权重",
+                        "name": "weight",
+                        "in": "body",
+                        "schema": {
+                            "type": "integer"
                         }
                     }
                 ],
@@ -113,7 +554,7 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/schema.AIConfig"
+                                            "$ref": "#/definitions/schema.Model"
                                         }
                                     }
                                 }
@@ -122,6 +563,106 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/util.ResponseResult"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/util.ResponseResult"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/util.ResponseResult"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "tags": [
+                    "AIAPI"
+                ],
+                "summary": "删除现有的模型配置",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "模型ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/util.ResponseResult"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/util.ResponseResult"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/util.ResponseResult"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/util.ResponseResult"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/ai/models/{id}/reset": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "tags": [
+                    "AIAPI"
+                ],
+                "summary": "重置特定模型的使用统计信息",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "模型ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/util.ResponseResult"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/util.ResponseResult"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
                         "schema": {
                             "$ref": "#/definitions/util.ResponseResult"
                         }
@@ -136,14 +677,20 @@ const docTemplate = `{
                         "ApiKeyAuth": []
                     }
                 ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "text/event-stream"
+                ],
                 "tags": [
                     "AIAPI"
                 ],
-                "summary": "文章润色",
+                "summary": "使用AI助手润色文章",
                 "parameters": [
                     {
-                        "description": "原始文章内容",
-                        "name": "content",
+                        "description": "文章内容",
+                        "name": "article_content",
                         "in": "body",
                         "required": true,
                         "schema": {
@@ -153,21 +700,9 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "流式返回润色后的文章内容",
                         "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ResponseResult"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/schema.AIResponse"
-                                        }
-                                    }
-                                }
-                            ]
+                            "type": "string"
                         }
                     },
                     "400": {
@@ -176,8 +711,20 @@ const docTemplate = `{
                             "$ref": "#/definitions/util.ResponseResult"
                         }
                     },
+                    "429": {
+                        "description": "Too Many Requests",
+                        "schema": {
+                            "$ref": "#/definitions/util.ResponseResult"
+                        }
+                    },
                     "500": {
                         "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/util.ResponseResult"
+                        }
+                    },
+                    "503": {
+                        "description": "Service Unavailable",
                         "schema": {
                             "$ref": "#/definitions/util.ResponseResult"
                         }
@@ -192,14 +739,20 @@ const docTemplate = `{
                         "ApiKeyAuth": []
                     }
                 ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "text/event-stream"
+                ],
                 "tags": [
                     "AIAPI"
                 ],
-                "summary": "生成摘要",
+                "summary": "使用AI助手为文章生成摘要",
                 "parameters": [
                     {
-                        "description": "原始文章内容",
-                        "name": "content",
+                        "description": "文章内容",
+                        "name": "article_content",
                         "in": "body",
                         "required": true,
                         "schema": {
@@ -209,21 +762,9 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "流式返回生成的文章摘要",
                         "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ResponseResult"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/schema.AIResponse"
-                                        }
-                                    }
-                                }
-                            ]
+                            "type": "string"
                         }
                     },
                     "400": {
@@ -232,8 +773,20 @@ const docTemplate = `{
                             "$ref": "#/definitions/util.ResponseResult"
                         }
                     },
+                    "429": {
+                        "description": "Too Many Requests",
+                        "schema": {
+                            "$ref": "#/definitions/util.ResponseResult"
+                        }
+                    },
                     "500": {
                         "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/util.ResponseResult"
+                        }
+                    },
+                    "503": {
+                        "description": "Service Unavailable",
                         "schema": {
                             "$ref": "#/definitions/util.ResponseResult"
                         }
@@ -241,21 +794,27 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/ai/tags": {
+        "/api/ai/tag": {
             "post": {
                 "security": [
                     {
                         "ApiKeyAuth": []
                     }
                 ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
                 "tags": [
                     "AIAPI"
                 ],
-                "summary": "推荐标签",
+                "summary": "使用AI助手为文章生成6个标签",
                 "parameters": [
                     {
-                        "description": "原始文章内容",
-                        "name": "content",
+                        "description": "文章内容",
+                        "name": "article_content",
                         "in": "body",
                         "required": true,
                         "schema": {
@@ -275,7 +834,7 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/schema.AIResponse"
+                                            "$ref": "#/definitions/schema.AssistantResponse"
                                         }
                                     }
                                 }
@@ -288,8 +847,20 @@ const docTemplate = `{
                             "$ref": "#/definitions/util.ResponseResult"
                         }
                     },
+                    "429": {
+                        "description": "Too Many Requests",
+                        "schema": {
+                            "$ref": "#/definitions/util.ResponseResult"
+                        }
+                    },
                     "500": {
                         "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/util.ResponseResult"
+                        }
+                    },
+                    "503": {
+                        "description": "Service Unavailable",
                         "schema": {
                             "$ref": "#/definitions/util.ResponseResult"
                         }
@@ -304,14 +875,20 @@ const docTemplate = `{
                         "ApiKeyAuth": []
                     }
                 ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
                 "tags": [
                     "AIAPI"
                 ],
-                "summary": "生成标题建议",
+                "summary": "使用AI助手为文章生成5个标题",
                 "parameters": [
                     {
-                        "description": "原始文章内容",
-                        "name": "content",
+                        "description": "文章内容",
+                        "name": "article_content",
                         "in": "body",
                         "required": true,
                         "schema": {
@@ -331,7 +908,7 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/schema.AIResponse"
+                                            "$ref": "#/definitions/schema.AssistantResponse"
                                         }
                                     }
                                 }
@@ -344,8 +921,20 @@ const docTemplate = `{
                             "$ref": "#/definitions/util.ResponseResult"
                         }
                     },
+                    "429": {
+                        "description": "Too Many Requests",
+                        "schema": {
+                            "$ref": "#/definitions/util.ResponseResult"
+                        }
+                    },
                     "500": {
                         "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/util.ResponseResult"
+                        }
+                    },
+                    "503": {
+                        "description": "Service Unavailable",
                         "schema": {
                             "$ref": "#/definitions/util.ResponseResult"
                         }
@@ -748,7 +1337,7 @@ const docTemplate = `{
                 "summary": "权限验证测试（仅管理员可用）",
                 "parameters": [
                     {
-                        "description": "主体(用户或角色)",
+                        "description": "主体",
                         "name": "subject",
                         "in": "body",
                         "required": true,
@@ -757,7 +1346,7 @@ const docTemplate = `{
                         }
                     },
                     {
-                        "description": "对象(资源)",
+                        "description": "资源",
                         "name": "object",
                         "in": "body",
                         "required": true,
@@ -766,7 +1355,7 @@ const docTemplate = `{
                         }
                     },
                     {
-                        "description": "动作(操作)",
+                        "description": "动作",
                         "name": "action",
                         "in": "body",
                         "required": true,
@@ -850,19 +1439,19 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "主体(用户或角色)",
+                        "description": "主体",
                         "name": "subject",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "对象(资源)",
+                        "description": "资源或角色，若策略类型为p，则为资源；若策略类型为g，则为角色",
                         "name": "object",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "动作(操作)",
+                        "description": "动作，策略类型为g时，该请求参数无效",
                         "name": "action",
                         "in": "query"
                     }
@@ -879,7 +1468,7 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/schema.PolicyListResponse"
+                                            "$ref": "#/definitions/schema.ListPolicyResponse"
                                         }
                                     }
                                 }
@@ -914,7 +1503,20 @@ const docTemplate = `{
                 "summary": "添加策略（仅管理员可用）",
                 "parameters": [
                     {
-                        "description": "主体(用户或角色)",
+                        "description": "策略类型(p或g)",
+                        "name": "type",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "p",
+                                "g"
+                            ]
+                        }
+                    },
+                    {
+                        "description": "主体",
                         "name": "subject",
                         "in": "body",
                         "required": true,
@@ -923,7 +1525,7 @@ const docTemplate = `{
                         }
                     },
                     {
-                        "description": "对象(资源)",
+                        "description": "资源或角色，若策略类型为p，则为资源；若策略类型为g，则为角色",
                         "name": "object",
                         "in": "body",
                         "required": true,
@@ -932,10 +1534,9 @@ const docTemplate = `{
                         }
                     },
                     {
-                        "description": "动作(操作)",
+                        "description": "动作，策略类型为p时必需",
                         "name": "action",
                         "in": "body",
-                        "required": true,
                         "schema": {
                             "type": "string"
                         }
@@ -945,7 +1546,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/util.ResponseResult"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.ResponseResult"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/schema.PolicyItem"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
@@ -967,7 +1580,9 @@ const docTemplate = `{
                         }
                     }
                 }
-            },
+            }
+        },
+        "/api/auth/rbac/policy/{id}": {
             "delete": {
                 "security": [
                     {
@@ -980,31 +1595,11 @@ const docTemplate = `{
                 "summary": "移除策略（仅管理员可用）",
                 "parameters": [
                     {
-                        "description": "主体(用户或角色)",
-                        "name": "subject",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    {
-                        "description": "对象(资源)",
-                        "name": "object",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    {
-                        "description": "动作(操作)",
-                        "name": "action",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "type": "string"
-                        }
+                        "type": "integer",
+                        "description": "策略ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
                     }
                 ],
                 "responses": {
@@ -1022,359 +1617,6 @@ const docTemplate = `{
                     },
                     "404": {
                         "description": "策略不存在",
-                        "schema": {
-                            "$ref": "#/definitions/util.ResponseResult"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/util.ResponseResult"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/auth/rbac/reload": {
-            "post": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "tags": [
-                    "RBACAPI"
-                ],
-                "summary": "重新加载策略（仅管理员可用）",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/util.ResponseResult"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/util.ResponseResult"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/auth/rbac/role": {
-            "post": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "tags": [
-                    "RBACAPI"
-                ],
-                "summary": "为用户添加角色（仅管理员可用）",
-                "parameters": [
-                    {
-                        "description": "角色",
-                        "name": "role",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    {
-                        "description": "用户",
-                        "name": "user",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/util.ResponseResult"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/util.ResponseResult"
-                        }
-                    },
-                    "409": {
-                        "description": "用户角色关系已存在",
-                        "schema": {
-                            "$ref": "#/definitions/util.ResponseResult"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/util.ResponseResult"
-                        }
-                    }
-                }
-            },
-            "delete": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "tags": [
-                    "RBACAPI"
-                ],
-                "summary": "为用户移除角色（仅管理员可用）",
-                "parameters": [
-                    {
-                        "description": "角色",
-                        "name": "role",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    {
-                        "description": "用户",
-                        "name": "user",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/util.ResponseResult"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/util.ResponseResult"
-                        }
-                    },
-                    "404": {
-                        "description": "用户角色关系不存在",
-                        "schema": {
-                            "$ref": "#/definitions/util.ResponseResult"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/util.ResponseResult"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/auth/rbac/role/{role}/users": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "tags": [
-                    "RBACAPI"
-                ],
-                "summary": "获取具有指定角色的所有用户（仅管理员可用）",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "角色名",
-                        "name": "role",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ResponseResult"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "type": "object",
-                                            "additionalProperties": {
-                                                "type": "array",
-                                                "items": {
-                                                    "allOf": [
-                                                        {
-                                                            "type": "string"
-                                                        },
-                                                        {
-                                                            "type": "object",
-                                                            "properties": {
-                                                                "users": {
-                                                                    "type": "array",
-                                                                    "items": {
-                                                                        "type": "string"
-                                                                    }
-                                                                }
-                                                            }
-                                                        }
-                                                    ]
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "角色名不能为空",
-                        "schema": {
-                            "$ref": "#/definitions/util.ResponseResult"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/util.ResponseResult"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/auth/rbac/roles": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "tags": [
-                    "RBACAPI"
-                ],
-                "summary": "获取所有角色（仅管理员可用）",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ResponseResult"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "type": "object",
-                                            "additionalProperties": {
-                                                "type": "array",
-                                                "items": {
-                                                    "allOf": [
-                                                        {
-                                                            "type": "string"
-                                                        },
-                                                        {
-                                                            "type": "object",
-                                                            "properties": {
-                                                                "roles": {
-                                                                    "type": "array",
-                                                                    "items": {
-                                                                        "type": "string"
-                                                                    }
-                                                                }
-                                                            }
-                                                        }
-                                                    ]
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/util.ResponseResult"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/auth/rbac/user/{user}/roles": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "tags": [
-                    "RBACAPI"
-                ],
-                "summary": "获取用户的所有角色（仅管理员可用）",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "用户名",
-                        "name": "user",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/util.ResponseResult"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "type": "object",
-                                            "additionalProperties": {
-                                                "type": "array",
-                                                "items": {
-                                                    "allOf": [
-                                                        {
-                                                            "type": "string"
-                                                        },
-                                                        {
-                                                            "type": "object",
-                                                            "properties": {
-                                                                "roles": {
-                                                                    "type": "array",
-                                                                    "items": {
-                                                                        "type": "string"
-                                                                    }
-                                                                }
-                                                            }
-                                                        }
-                                                    ]
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "用户名不能为空",
                         "schema": {
                             "$ref": "#/definitions/util.ResponseResult"
                         }
@@ -1514,10 +1756,9 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
-                        "minimum": 1,
-                        "type": "integer",
-                        "description": "作者ID",
-                        "name": "author_id",
+                        "type": "string",
+                        "description": "作者名称（current 表示当前用户）",
+                        "name": "author",
                         "in": "query"
                     },
                     {
@@ -1533,13 +1774,14 @@ const docTemplate = `{
                     {
                         "enum": [
                             "newest",
-                            "popular",
-                            "most_commented",
-                            "most_liked"
+                            "views",
+                            "likes",
+                            "favorites",
+                            "comments"
                         ],
                         "type": "string",
                         "default": "newest",
-                        "description": "排序方式",
+                        "description": "排序依据",
                         "name": "sort_by",
                         "in": "query"
                     },
@@ -1547,6 +1789,20 @@ const docTemplate = `{
                         "type": "string",
                         "description": "搜索关键词",
                         "name": "keyword",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "today",
+                            "week",
+                            "month",
+                            "year",
+                            "all"
+                        ],
+                        "type": "string",
+                        "default": "all",
+                        "description": "创建时间范围",
+                        "name": "time_range",
                         "in": "query"
                     }
                 ],
@@ -1571,12 +1827,6 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/util.ResponseResult"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
                         "schema": {
                             "$ref": "#/definitions/util.ResponseResult"
                         }
@@ -2102,22 +2352,7 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "type": "object",
-                                            "additionalProperties": {
-                                                "allOf": [
-                                                    {
-                                                        "type": "string"
-                                                    },
-                                                    {
-                                                        "type": "object",
-                                                        "properties": {
-                                                            "url": {
-                                                                "type": "string"
-                                                            }
-                                                        }
-                                                    }
-                                                ]
-                                            }
+                                            "$ref": "#/definitions/schema.CoverResponse"
                                         }
                                     }
                                 }
@@ -2403,22 +2638,7 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "type": "object",
-                                            "additionalProperties": {
-                                                "allOf": [
-                                                    {
-                                                        "type": "boolean"
-                                                    },
-                                                    {
-                                                        "type": "object",
-                                                        "properties": {
-                                                            "favorited": {
-                                                                "type": "boolean"
-                                                            }
-                                                        }
-                                                    }
-                                                ]
-                                            }
+                                            "$ref": "#/definitions/schema.ArticleInteractionResponse"
                                         }
                                     }
                                 }
@@ -2472,22 +2692,7 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "type": "object",
-                                            "additionalProperties": {
-                                                "allOf": [
-                                                    {
-                                                        "type": "boolean"
-                                                    },
-                                                    {
-                                                        "type": "object",
-                                                        "properties": {
-                                                            "liked": {
-                                                                "type": "boolean"
-                                                            }
-                                                        }
-                                                    }
-                                                ]
-                                            }
+                                            "$ref": "#/definitions/schema.ArticleInteractionResponse"
                                         }
                                     }
                                 }
@@ -2514,7 +2719,7 @@ const docTemplate = `{
                 "tags": [
                     "CategoryAPI"
                 ],
-                "summary": "获取所有分类",
+                "summary": "获取所有分类（目前该 API 没用上）",
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -2636,6 +2841,46 @@ const docTemplate = `{
                         "default": 10,
                         "description": "每页容量",
                         "name": "page_size",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "desc",
+                            "asc"
+                        ],
+                        "type": "string",
+                        "description": "如何按照分类ID排序",
+                        "name": "sort_by_id",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "desc",
+                            "asc"
+                        ],
+                        "type": "string",
+                        "description": "如何按照分类的文章数量排序",
+                        "name": "sort_by_article_count",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "desc",
+                            "asc"
+                        ],
+                        "type": "string",
+                        "description": "如何按照创建时间排序",
+                        "name": "sort_by_create",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "desc",
+                            "asc"
+                        ],
+                        "type": "string",
+                        "description": "如何按照更新时间排序",
+                        "name": "sort_by_update",
                         "in": "query"
                     }
                 ],
@@ -3019,6 +3264,46 @@ const docTemplate = `{
                         "description": "每页容量",
                         "name": "page_size",
                         "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "desc",
+                            "asc"
+                        ],
+                        "type": "string",
+                        "description": "如何按照标签ID排序",
+                        "name": "sort_by_id",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "desc",
+                            "asc"
+                        ],
+                        "type": "string",
+                        "description": "如何按照标签的文章数量排序",
+                        "name": "sort_by_article_count",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "desc",
+                            "asc"
+                        ],
+                        "type": "string",
+                        "description": "如何按照创建时间排序",
+                        "name": "sort_by_create",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "desc",
+                            "asc"
+                        ],
+                        "type": "string",
+                        "description": "如何按照更新时间排序",
+                        "name": "sort_by_update",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -3236,7 +3521,7 @@ const docTemplate = `{
                 "tags": [
                     "CommentAPI"
                 ],
-                "summary": "创建评论",
+                "summary": "创建评论（会增加文章评论数、响应刚创建评论的全部信息）",
                 "parameters": [
                     {
                         "minimum": 1,
@@ -3318,13 +3603,13 @@ const docTemplate = `{
                 "tags": [
                     "CommentAPI"
                 ],
-                "summary": "获取文章评论",
+                "summary": "获取文章的顶级评论",
                 "parameters": [
                     {
                         "minimum": 1,
                         "type": "integer",
                         "description": "文章ID",
-                        "name": "articleId",
+                        "name": "article_id",
                         "in": "path",
                         "required": true
                     },
@@ -3343,6 +3628,17 @@ const docTemplate = `{
                         "default": 10,
                         "description": "页容量",
                         "name": "page_size",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "asc",
+                            "desc"
+                        ],
+                        "type": "string",
+                        "default": "desc",
+                        "description": "排序方式",
+                        "name": "sort_by_create",
                         "in": "query"
                     }
                 ],
@@ -3367,6 +3663,241 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/util.ResponseResult"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/util.ResponseResult"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/comment/review": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "tags": [
+                    "CommentAPI"
+                ],
+                "summary": "获取评论列表（适用于审核和管理，仅管理员可用）",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "文章ID",
+                        "name": "article_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "评论作者ID",
+                        "name": "author_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "父评论ID",
+                        "name": "parent_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "根评论ID",
+                        "name": "root_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "评论层级",
+                        "name": "level",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            0,
+                            1,
+                            2
+                        ],
+                        "type": "integer",
+                        "description": "评论状态：0-待审核，1-已通过，2-已拒绝",
+                        "name": "status",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "关键词",
+                        "name": "keyword",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "创建开始时间，格式：2006-01-02 15:04:05",
+                        "name": "create_start_time",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "创建结束时间，格式：2006-01-02 15:04:05",
+                        "name": "create_end_time",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "审核开始时间，格式：2006-01-02 15:04:05",
+                        "name": "review_start_time",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "审核结束时间，格式：2006-01-02 15:04:05",
+                        "name": "review_end_time",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "审核人员ID",
+                        "name": "reviewer_id",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "create",
+                            "review"
+                        ],
+                        "type": "string",
+                        "default": "create",
+                        "description": "排序字段：create-创建时间，review-审核时间",
+                        "name": "sort_by",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "desc",
+                            "asc"
+                        ],
+                        "type": "string",
+                        "default": "desc",
+                        "description": "排序方式：desc-降序，asc-升序",
+                        "name": "sort_order",
+                        "in": "query"
+                    },
+                    {
+                        "minimum": 1,
+                        "type": "integer",
+                        "default": 1,
+                        "description": "页码",
+                        "name": "page",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "maximum": 100,
+                        "minimum": 1,
+                        "type": "integer",
+                        "default": 10,
+                        "description": "页容量",
+                        "name": "page_size",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.ResponseResult"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/schema.CommentPaginationResult"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/util.ResponseResult"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/util.ResponseResult"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "tags": [
+                    "CommentAPI"
+                ],
+                "summary": "审核评论（仅管理员可用）",
+                "parameters": [
+                    {
+                        "minimum": 1,
+                        "description": "评论ID",
+                        "name": "comment_id",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "description": "审核状态：1-通过，2-拒绝",
+                        "name": "status",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "enum": [
+                                1,
+                                2
+                            ]
+                        }
+                    },
+                    {
+                        "description": "审核备注",
+                        "name": "review_remark",
+                        "in": "body",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/util.ResponseResult"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/util.ResponseResult"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
                             "$ref": "#/definitions/util.ResponseResult"
                         }
@@ -3508,7 +4039,7 @@ const docTemplate = `{
                 "tags": [
                     "CommentAPI"
                 ],
-                "summary": "删除评论",
+                "summary": "删除评论（回复也会被删除、文章评论数也会减少）",
                 "parameters": [
                     {
                         "minimum": 1,
@@ -3558,7 +4089,7 @@ const docTemplate = `{
                 "tags": [
                     "CommentAPI"
                 ],
-                "summary": "获取评论的回复",
+                "summary": "获取顶级评论的所有回复（扁平化列表，适合前端显示）",
                 "parameters": [
                     {
                         "minimum": 1,
@@ -3584,6 +4115,32 @@ const docTemplate = `{
                         "description": "页容量",
                         "name": "page_size",
                         "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "default": false,
+                        "description": "是否包含回复的回复",
+                        "name": "include_replies",
+                        "in": "query"
+                    },
+                    {
+                        "minimum": 0,
+                        "type": "integer",
+                        "default": 0,
+                        "description": "回复层数限制，i (i\u003e0) 表示获取到第 i 层回复，0表示不限制",
+                        "name": "max_depth",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "asc",
+                            "desc"
+                        ],
+                        "type": "string",
+                        "default": "asc",
+                        "description": "排序方式",
+                        "name": "sort_by_create",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -3607,6 +4164,12 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/util.ResponseResult"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
                             "$ref": "#/definitions/util.ResponseResult"
                         }
@@ -3678,7 +4241,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/stat/articles": {
+        "/api/stat/articles/creation": {
             "get": {
                 "security": [
                     {
@@ -3688,7 +4251,17 @@ const docTemplate = `{
                 "tags": [
                     "StatAPI"
                 ],
-                "summary": "获取文章统计信息（仅管理员可用）",
+                "summary": "获取文章创作时间统计（仅管理员可用）",
+                "parameters": [
+                    {
+                        "minimum": 1,
+                        "type": "integer",
+                        "default": 30,
+                        "description": "天数",
+                        "name": "days",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -3701,7 +4274,55 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/schema.ArticleStatisticResponse"
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/schema.ArticleCreationTimeStatsItem"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/util.ResponseResult"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/util.ResponseResult"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/stat/cache": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "tags": [
+                    "StatAPI"
+                ],
+                "summary": "获取缓存信息（仅管理员可用）",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.ResponseResult"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/schema.CacheInfo"
                                         }
                                     }
                                 }
@@ -3748,6 +4369,171 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/stat/comments": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "tags": [
+                    "StatAPI"
+                ],
+                "summary": "获取所有评论的统计数据（仅管理员可用）",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.ResponseResult"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/schema.CommentStatisticResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/api/stat/cpu": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "tags": [
+                    "StatAPI"
+                ],
+                "summary": "获取 CPU 信息（仅管理员可用）",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.ResponseResult"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/schema.CPUInfo"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/api/stat/db": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "tags": [
+                    "StatAPI"
+                ],
+                "summary": "获取数据库信息（仅管理员可用）",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.ResponseResult"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/schema.DatabaseInfo"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/api/stat/disk": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "tags": [
+                    "StatAPI"
+                ],
+                "summary": "获取硬盘信息（仅管理员可用）",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.ResponseResult"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/schema.DiskInfo"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/api/stat/go": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "tags": [
+                    "StatAPI"
+                ],
+                "summary": "获取 GO 运行时信息（仅管理员可用）",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.ResponseResult"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/schema.GoRuntimeInfo"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
         "/api/stat/logger": {
             "get": {
                 "security": [
@@ -3769,7 +4555,7 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
-                        "maximum": 30,
+                        "maximum": 100,
                         "minimum": 1,
                         "type": "integer",
                         "default": 10,
@@ -3778,6 +4564,15 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
+                        "enum": [
+                            "debug",
+                            "info",
+                            "warn",
+                            "error",
+                            "dpanic",
+                            "panic",
+                            "fatal"
+                        ],
                         "type": "string",
                         "description": "日志级别",
                         "name": "level",
@@ -3796,6 +4591,16 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
+                        "enum": [
+                            "main",
+                            "recovery",
+                            "request",
+                            "login",
+                            "logout",
+                            "system",
+                            "operate",
+                            "ai"
+                        ],
                         "type": "string",
                         "description": "日志标签",
                         "name": "tag",
@@ -3849,6 +4654,235 @@ const docTemplate = `{
                         "description": "Not Found",
                         "schema": {
                             "$ref": "#/definitions/util.ResponseResult"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/util.ResponseResult"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/stat/memory": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "tags": [
+                    "StatAPI"
+                ],
+                "summary": "获取内存信息（仅管理员可用）",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.ResponseResult"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/schema.MemoryInfo"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/api/stat/overview": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "tags": [
+                    "StatAPI"
+                ],
+                "summary": "获取站点概览统计信息（仅管理员可用）",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.ResponseResult"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/schema.SiteOverviewResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/api/stat/system": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "tags": [
+                    "StatAPI"
+                ],
+                "summary": "获取系统信息（仅管理员可用）",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.ResponseResult"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/schema.SystemInfo"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/api/stat/user/articles": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "tags": [
+                    "StatAPI"
+                ],
+                "summary": "获取用户文章统计信息",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.ResponseResult"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/schema.SiteOverviewResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/api/stat/user/articles/visits": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "tags": [
+                    "StatAPI"
+                ],
+                "summary": "获取用户文章访问趋势",
+                "parameters": [
+                    {
+                        "minimum": 1,
+                        "type": "integer",
+                        "default": 7,
+                        "description": "天数",
+                        "name": "days",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.ResponseResult"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/schema.UserArticleVisitTrendResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/util.ResponseResult"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/util.ResponseResult"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/stat/user/categories": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "tags": [
+                    "StatAPI"
+                ],
+                "summary": "获取用户文章分类分布",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.ResponseResult"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/schema.CategoryDistItem"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "500": {
@@ -3920,41 +4954,6 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "schema.AIConfig": {
-            "type": "object",
-            "properties": {
-                "api_key": {
-                    "type": "string"
-                },
-                "endpoint": {
-                    "type": "string"
-                },
-                "model": {
-                    "type": "string"
-                },
-                "provider": {
-                    "description": "openai, local",
-                    "type": "string"
-                },
-                "temperature": {
-                    "type": "number"
-                }
-            }
-        },
-        "schema.AIResponse": {
-            "type": "object",
-            "properties": {
-                "result": {
-                    "type": "string"
-                },
-                "suggestions": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                }
-            }
-        },
         "schema.APIAccessTrendItem": {
             "type": "object",
             "properties": {
@@ -3972,6 +4971,32 @@ const docTemplate = `{
                 },
                 "total_count": {
                     "type": "integer"
+                }
+            }
+        },
+        "schema.ArticleCreationTimeStatsItem": {
+            "type": "object",
+            "properties": {
+                "categories": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "integer"
+                    }
+                },
+                "count": {
+                    "type": "integer"
+                },
+                "date": {
+                    "type": "string",
+                    "example": "2025-05-01"
+                }
+            }
+        },
+        "schema.ArticleInteractionResponse": {
+            "type": "object",
+            "properties": {
+                "interacted": {
+                    "type": "boolean"
                 }
             }
         },
@@ -4028,7 +5053,7 @@ const docTemplate = `{
                     "description": "标签列表",
                     "type": "array",
                     "items": {
-                        "type": "string"
+                        "type": "integer"
                     }
                 },
                 "title": {
@@ -4122,7 +5147,7 @@ const docTemplate = `{
                     "description": "标签列表",
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/schema.Tag"
+                        "type": "integer"
                     }
                 },
                 "title": {
@@ -4136,23 +5161,35 @@ const docTemplate = `{
                 }
             }
         },
-        "schema.ArticleStatisticResponse": {
+        "schema.ArticleVisitTrendItem": {
             "type": "object",
             "properties": {
-                "totalArticles": {
-                    "type": "integer"
+                "date": {
+                    "type": "string",
+                    "example": "2023-01-01"
                 },
-                "totalComments": {
+                "visit_count": {
                     "type": "integer"
+                }
+            }
+        },
+        "schema.AssistantResponse": {
+            "type": "object",
+            "properties": {
+                "content": {
+                    "description": "数据流内容",
+                    "type": "string"
                 },
-                "totalFavorites": {
-                    "type": "integer"
+                "contents": {
+                    "description": "非流式传输",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 },
-                "totalLikes": {
-                    "type": "integer"
-                },
-                "totalViews": {
-                    "type": "integer"
+                "is_error": {
+                    "description": "流式传输",
+                    "type": "boolean"
                 }
             }
         },
@@ -4160,6 +5197,71 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "url": {
+                    "type": "string"
+                }
+            }
+        },
+        "schema.CPUInfo": {
+            "type": "object",
+            "properties": {
+                "cache_size": {
+                    "description": "CPU缓存大小（字节）",
+                    "type": "integer"
+                },
+                "cores": {
+                    "description": "CPU核心数",
+                    "type": "integer"
+                },
+                "frequency": {
+                    "description": "CPU频率（MHz）",
+                    "type": "number"
+                },
+                "model_name": {
+                    "description": "CPU型号信息",
+                    "type": "string"
+                },
+                "per_core_percent": {
+                    "description": "每个CPU核心的使用率",
+                    "type": "array",
+                    "items": {
+                        "type": "number"
+                    }
+                },
+                "usage_percent": {
+                    "description": "CPU使用率（百分比）",
+                    "type": "number"
+                }
+            }
+        },
+        "schema.CacheInfo": {
+            "type": "object",
+            "properties": {
+                "cache_type": {
+                    "description": "缓存类型",
+                    "type": "string"
+                },
+                "connected_clients": {
+                    "description": "已连接客户端数量",
+                    "type": "integer"
+                },
+                "hit_rate": {
+                    "description": "命中率",
+                    "type": "number"
+                },
+                "key_count": {
+                    "description": "键数量",
+                    "type": "integer"
+                },
+                "used_memory": {
+                    "description": "已使用内存（字节）",
+                    "type": "integer"
+                },
+                "used_memory_peak": {
+                    "description": "已使用内存峰值（字节）",
+                    "type": "integer"
+                },
+                "version": {
+                    "description": "缓存版本",
                     "type": "string"
                 }
             }
@@ -4186,11 +5288,23 @@ const docTemplate = `{
         "schema.CategoryPaginationResult": {
             "type": "object",
             "properties": {
+                "categories_with_article": {
+                    "description": "有文章的分类数量",
+                    "type": "integer"
+                },
+                "category_name_with_most_article": {
+                    "description": "文章数量最多的分类名称",
+                    "type": "string"
+                },
                 "items": {
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/schema.CategoryResponse"
                     }
+                },
+                "most_article_counts": {
+                    "description": "分类中最多的文章数量",
+                    "type": "integer"
                 },
                 "page": {
                     "type": "integer"
@@ -4198,7 +5312,12 @@ const docTemplate = `{
                 "page_size": {
                     "type": "integer"
                 },
-                "total": {
+                "total_articles": {
+                    "description": "有分类的文章总数",
+                    "type": "integer"
+                },
+                "total_categories": {
+                    "description": "分类总数",
                     "type": "integer"
                 },
                 "total_pages": {
@@ -4259,6 +5378,10 @@ const docTemplate = `{
                 "article_id": {
                     "type": "integer"
                 },
+                "article_title": {
+                    "description": "文章标题",
+                    "type": "string"
+                },
                 "author": {
                     "description": "作者名称",
                     "type": "string"
@@ -4279,18 +5402,162 @@ const docTemplate = `{
                 "id": {
                     "type": "integer"
                 },
+                "level": {
+                    "description": "评论层级",
+                    "type": "integer"
+                },
+                "parent_author": {
+                    "description": "父评论作者",
+                    "type": "string"
+                },
+                "parent_content": {
+                    "description": "父评论内容",
+                    "type": "string"
+                },
                 "parent_id": {
                     "type": "integer"
                 },
-                "replies": {
-                    "description": "回复列表",
+                "reply_count": {
+                    "description": "回复数量",
+                    "type": "integer"
+                },
+                "review_remark": {
+                    "description": "审核备注",
+                    "type": "string"
+                },
+                "reviewed_at": {
+                    "description": "审核时间",
+                    "type": "string"
+                },
+                "reviewer_avatar": {
+                    "description": "审核员头像",
+                    "type": "string"
+                },
+                "reviewer_id": {
+                    "description": "审核员ID",
+                    "type": "integer"
+                },
+                "reviewer_name": {
+                    "description": "审核员名称",
+                    "type": "string"
+                },
+                "root_id": {
+                    "description": "根评论ID",
+                    "type": "integer"
+                },
+                "status": {
+                    "description": "审核状态",
+                    "type": "integer"
+                }
+            }
+        },
+        "schema.CommentStatisticResponse": {
+            "type": "object",
+            "properties": {
+                "passed_comments": {
+                    "type": "integer"
+                },
+                "pending_comments": {
+                    "type": "integer"
+                },
+                "rejected_comments": {
+                    "type": "integer"
+                },
+                "total_comments": {
+                    "type": "integer"
+                }
+            }
+        },
+        "schema.CoverResponse": {
+            "type": "object",
+            "properties": {
+                "url": {
+                    "type": "string"
+                }
+            }
+        },
+        "schema.DatabaseInfo": {
+            "type": "object",
+            "properties": {
+                "active_transactions": {
+                    "description": "活跃事务数量",
+                    "type": "integer"
+                },
+                "cache_hit_rate": {
+                    "description": "缓存命中率（百分比）",
+                    "type": "number"
+                },
+                "db_size": {
+                    "description": "数据库大小（字节）",
+                    "type": "integer"
+                },
+                "db_type": {
+                    "description": "数据库类型",
+                    "type": "string"
+                },
+                "index_count": {
+                    "description": "索引数量",
+                    "type": "integer"
+                },
+                "pool": {
+                    "description": "连接池状态",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/schema.PoolStatus"
+                        }
+                    ]
+                },
+                "qps": {
+                    "description": "每秒查询数",
+                    "type": "number"
+                },
+                "slow_query_count": {
+                    "description": "慢查询数量（最近1小时）",
+                    "type": "integer"
+                },
+                "slow_query_threshold": {
+                    "description": "慢查询阈值（秒）",
+                    "type": "number"
+                },
+                "table_count": {
+                    "description": "表数量",
+                    "type": "integer"
+                },
+                "uptime": {
+                    "description": "数据库运行时间（秒）",
+                    "type": "integer"
+                },
+                "version": {
+                    "description": "数据库版本",
+                    "type": "string"
+                }
+            }
+        },
+        "schema.DiskInfo": {
+            "type": "object",
+            "properties": {
+                "io_counters_read_bytes": {
+                    "description": "自系统启动以来读取的总字节数",
+                    "type": "integer"
+                },
+                "io_counters_read_count": {
+                    "description": "自系统启动以来的读取操作总次数",
+                    "type": "integer"
+                },
+                "io_counters_write_bytes": {
+                    "description": "自系统启动以来写入的总字节数",
+                    "type": "integer"
+                },
+                "io_counters_write_count": {
+                    "description": "自系统启动以来的写入操作总次数",
+                    "type": "integer"
+                },
+                "partitions": {
+                    "description": "磁盘分区信息",
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/schema.CommentResponse"
+                        "$ref": "#/definitions/schema.PartitionInfo"
                     }
-                },
-                "updated_at": {
-                    "type": "string"
                 }
             }
         },
@@ -4299,6 +5566,35 @@ const docTemplate = `{
             "properties": {
                 "allowed": {
                     "type": "boolean"
+                }
+            }
+        },
+        "schema.GoRuntimeInfo": {
+            "type": "object",
+            "properties": {
+                "gc_count": {
+                    "description": "自程序启动以来GC次数",
+                    "type": "integer"
+                },
+                "gc_pause_ns": {
+                    "description": "最近一次GC暂停时间（纳秒）",
+                    "type": "integer"
+                },
+                "goroutines": {
+                    "description": "当前goroutine数量",
+                    "type": "integer"
+                },
+                "heap_alloc": {
+                    "description": "堆分配字节数",
+                    "type": "integer"
+                },
+                "heap_objects": {
+                    "description": "堆对象数量",
+                    "type": "integer"
+                },
+                "version": {
+                    "description": "Go版本",
+                    "type": "string"
                 }
             }
         },
@@ -4312,6 +5608,52 @@ const docTemplate = `{
                 "liked": {
                     "description": "是否已点赞",
                     "type": "boolean"
+                }
+            }
+        },
+        "schema.ListModelsResponse": {
+            "type": "object",
+            "properties": {
+                "models": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/schema.Model"
+                    }
+                },
+                "page": {
+                    "type": "integer"
+                },
+                "page_size": {
+                    "type": "integer"
+                },
+                "total": {
+                    "type": "integer"
+                },
+                "total_pages": {
+                    "type": "integer"
+                }
+            }
+        },
+        "schema.ListPolicyResponse": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/schema.PolicyItem"
+                    }
+                },
+                "page": {
+                    "type": "integer"
+                },
+                "page_size": {
+                    "type": "integer"
+                },
+                "total": {
+                    "type": "integer"
+                },
+                "total_pages": {
+                    "type": "integer"
                 }
             }
         },
@@ -4408,13 +5750,240 @@ const docTemplate = `{
                 }
             }
         },
-        "schema.PolicyListItem": {
+        "schema.MemoryInfo": {
+            "type": "object",
+            "properties": {
+                "available": {
+                    "description": "可用内存（字节）",
+                    "type": "integer"
+                },
+                "swap_free": {
+                    "description": "可用交换分区（字节）",
+                    "type": "integer"
+                },
+                "swap_total": {
+                    "description": "交换分区总大小（字节）",
+                    "type": "integer"
+                },
+                "swap_usage_percent": {
+                    "description": "交换分区使用率（百分比）",
+                    "type": "number"
+                },
+                "swap_used": {
+                    "description": "交换分区已用（字节）",
+                    "type": "integer"
+                },
+                "total": {
+                    "description": "总内存（字节）",
+                    "type": "integer"
+                },
+                "usage_percent": {
+                    "description": "内存使用率（百分比）",
+                    "type": "number"
+                },
+                "used": {
+                    "description": "已使用内存（字节）",
+                    "type": "integer"
+                }
+            }
+        },
+        "schema.Model": {
+            "type": "object",
+            "properties": {
+                "active": {
+                    "description": "是否激活",
+                    "type": "boolean"
+                },
+                "api_key": {
+                    "description": "API密钥",
+                    "type": "string"
+                },
+                "avg_latency": {
+                    "description": "请求平均延迟（毫秒）",
+                    "type": "number"
+                },
+                "created_at": {
+                    "description": "创建时间",
+                    "type": "string"
+                },
+                "current_tokens": {
+                    "description": "当前可用令牌数",
+                    "type": "integer"
+                },
+                "description": {
+                    "description": "描述",
+                    "type": "string"
+                },
+                "endpoint": {
+                    "description": "API端点",
+                    "type": "string"
+                },
+                "failure_count": {
+                    "description": "失败请求数",
+                    "type": "integer"
+                },
+                "id": {
+                    "description": "主键",
+                    "type": "integer"
+                },
+                "last_refill_time": {
+                    "description": "上次令牌补充时间",
+                    "type": "string"
+                },
+                "model_name": {
+                    "description": "模型名称",
+                    "type": "string"
+                },
+                "provider": {
+                    "description": "提供商",
+                    "type": "string"
+                },
+                "rpm": {
+                    "description": "每分钟最大请求数",
+                    "type": "integer"
+                },
+                "success_count": {
+                    "description": "成功请求数",
+                    "type": "integer"
+                },
+                "temperature": {
+                    "description": "温度参数",
+                    "type": "number"
+                },
+                "timeout": {
+                    "description": "访问超时时间（秒）",
+                    "type": "integer"
+                },
+                "updated_at": {
+                    "description": "更新时间",
+                    "type": "string"
+                },
+                "weight": {
+                    "description": "令牌桶与加权轮询相关",
+                    "type": "integer"
+                }
+            }
+        },
+        "schema.ModelOverallStatsResponse": {
+            "type": "object",
+            "properties": {
+                "active_models": {
+                    "type": "integer"
+                },
+                "fastest_model": {
+                    "type": "object",
+                    "properties": {
+                        "avg_latency": {
+                            "type": "number"
+                        },
+                        "id": {
+                            "type": "integer"
+                        },
+                        "model_name": {
+                            "type": "string"
+                        },
+                        "provider": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "most_successful_model": {
+                    "type": "object",
+                    "properties": {
+                        "id": {
+                            "type": "integer"
+                        },
+                        "model_name": {
+                            "type": "string"
+                        },
+                        "provider": {
+                            "type": "string"
+                        },
+                        "success_rate": {
+                            "description": "百分比形式",
+                            "type": "number"
+                        }
+                    }
+                },
+                "most_used_model": {
+                    "type": "object",
+                    "properties": {
+                        "id": {
+                            "type": "integer"
+                        },
+                        "model_name": {
+                            "type": "string"
+                        },
+                        "provider": {
+                            "type": "string"
+                        },
+                        "request_count": {
+                            "type": "integer"
+                        }
+                    }
+                },
+                "overall_avg_latency": {
+                    "type": "number"
+                },
+                "overall_success_rate": {
+                    "description": "百分比形式",
+                    "type": "number"
+                },
+                "total_available_tokens": {
+                    "type": "integer"
+                },
+                "total_failure": {
+                    "type": "integer"
+                },
+                "total_models": {
+                    "type": "integer"
+                },
+                "total_requests": {
+                    "type": "integer"
+                },
+                "total_success": {
+                    "type": "integer"
+                }
+            }
+        },
+        "schema.PartitionInfo": {
+            "type": "object",
+            "properties": {
+                "device": {
+                    "description": "设备名称",
+                    "type": "string"
+                },
+                "free": {
+                    "description": "可用空间（字节）",
+                    "type": "integer"
+                },
+                "fstype": {
+                    "description": "文件系统类型",
+                    "type": "string"
+                },
+                "mountpoint": {
+                    "description": "挂载点",
+                    "type": "string"
+                },
+                "total": {
+                    "description": "总空间（字节）",
+                    "type": "integer"
+                },
+                "usage_percent": {
+                    "description": "使用率（百分比）",
+                    "type": "number"
+                },
+                "used": {
+                    "description": "已使用空间（字节）",
+                    "type": "integer"
+                }
+            }
+        },
+        "schema.PolicyItem": {
             "type": "object",
             "properties": {
                 "action": {
-                    "type": "string"
-                },
-                "created_at": {
+                    "description": "Type 为 g 时，该项不存在",
                     "type": "string"
                 },
                 "id": {
@@ -4431,34 +6000,96 @@ const docTemplate = `{
                 }
             }
         },
-        "schema.PolicyListResponse": {
+        "schema.PoolStatus": {
             "type": "object",
             "properties": {
-                "items": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/schema.PolicyListItem"
-                    }
+                "idle": {
+                    "description": "空闲连接数",
+                    "type": "integer"
                 },
-                "total": {
+                "in_use": {
+                    "description": "使用中的连接数",
+                    "type": "integer"
+                },
+                "max_idle": {
+                    "description": "最大空闲连接数",
+                    "type": "integer"
+                },
+                "max_idle_time": {
+                    "description": "最大空闲时间（秒）",
+                    "type": "integer"
+                },
+                "max_lifetime": {
+                    "description": "连接生命周期（秒）",
+                    "type": "integer"
+                },
+                "max_open": {
+                    "description": "最大连接数",
+                    "type": "integer"
+                },
+                "open": {
+                    "description": "活跃连接数",
+                    "type": "integer"
+                },
+                "wait_count": {
+                    "description": "等待连接数",
                     "type": "integer"
                 }
             }
         },
-        "schema.Tag": {
+        "schema.SiteOverviewResponse": {
             "type": "object",
             "properties": {
-                "created_at": {
-                    "type": "string"
-                },
-                "id": {
+                "total_articles": {
                     "type": "integer"
                 },
-                "name": {
+                "total_comments": {
+                    "type": "integer"
+                },
+                "total_favorites": {
+                    "type": "integer"
+                },
+                "total_likes": {
+                    "type": "integer"
+                },
+                "total_users": {
+                    "type": "integer"
+                },
+                "total_views": {
+                    "type": "integer"
+                }
+            }
+        },
+        "schema.SystemInfo": {
+            "type": "object",
+            "properties": {
+                "architecture": {
+                    "description": "系统架构",
                     "type": "string"
                 },
-                "updated_at": {
+                "hostname": {
+                    "description": "主机名",
                     "type": "string"
+                },
+                "kernel_version": {
+                    "description": "内核版本",
+                    "type": "string"
+                },
+                "platform": {
+                    "description": "平台信息",
+                    "type": "string"
+                },
+                "platform_version": {
+                    "description": "平台版本",
+                    "type": "string"
+                },
+                "process_count": {
+                    "description": "进程数量",
+                    "type": "integer"
+                },
+                "uptime": {
+                    "description": "系统运行时间（秒）",
+                    "type": "integer"
                 }
             }
         },
@@ -4471,16 +6102,28 @@ const docTemplate = `{
                         "$ref": "#/definitions/schema.TagResponse"
                     }
                 },
+                "most_article_counts": {
+                    "type": "integer"
+                },
                 "page": {
                     "type": "integer"
                 },
                 "page_size": {
                     "type": "integer"
                 },
-                "total": {
+                "tag_name_with_most_article": {
+                    "type": "string"
+                },
+                "tags_with_article": {
+                    "type": "integer"
+                },
+                "total_articles": {
                     "type": "integer"
                 },
                 "total_pages": {
+                    "type": "integer"
+                },
+                "total_tags": {
                     "type": "integer"
                 }
             }
@@ -4513,6 +6156,20 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "user_count": {
+                    "type": "integer"
+                }
+            }
+        },
+        "schema.UserArticleVisitTrendResponse": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/schema.ArticleVisitTrendItem"
+                    }
+                },
+                "total_visit": {
                     "type": "integer"
                 }
             }

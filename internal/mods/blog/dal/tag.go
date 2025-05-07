@@ -86,47 +86,112 @@ func (r *TagRepository) GetAll(ctx context.Context) ([]schema.TagResponse, error
 }
 
 // GetList 获取标签列表（带分页）
-func (r *TagRepository) GetList(ctx context.Context, page, pageSize int) (*schema.TagPaginationResult, error) {
+func (r *TagRepository) GetList(ctx context.Context, params *schema.TagQueryParams) (*schema.TagPaginationResult, error) {
 	var result schema.TagPaginationResult
 
 	// 默认值
-	if page <= 0 {
-		page = 1
+	if params.Page <= 0 {
+		params.Page = 1
 	}
-	if pageSize <= 0 {
-		pageSize = 10
+	if params.PageSize <= 0 {
+		params.PageSize = 10
 	}
 
 	// 计算总数
-	var total int64
-	if err := GetTagDB(ctx, r.DB).Count(&total).Error; err != nil {
+	var totalTags int64
+	if err := GetTagDB(ctx, r.DB).Count(&totalTags).Error; err != nil {
 		return nil, errors.WithStack(err)
 	}
 
+	// 计算有标签的文章总数
+	var totalArticles struct {
+		Count int64
+	}
+	if err := GetArticleTagDB(ctx, r.DB).Select("COUNT(DISTINCT article_id) as count").Scan(&totalArticles).Error; err != nil {
+		logging.Context(ctx).Error("获取有标签的文章总数失败", zap.Error(errors.WithStack(err)))
+		totalArticles.Count = 0
+	}
+
+	// 查询有文章的标签数量
+	var tagsWithArticle struct {
+		Count int64
+	}
+	if err := GetArticleTagDB(ctx, r.DB).Select("COUNT(DISTINCT tag_id) as count").Scan(&tagsWithArticle).Error; err != nil {
+		logging.Context(ctx).Error("获取有文章的标签数量失败", zap.Error(errors.WithStack(err)))
+		tagsWithArticle.Count = 0
+	}
+
+	// 查询文章数量最多的标签及其文章数量
+	tagTableName := new(schema.Tag).TableName()
+	articleTagTableName := new(schema.ArticleTag).TableName()
+
+	var mostArticleTag struct {
+		TagName      string
+		ArticleCount int64
+	}
+
+	err := GetTagDB(ctx, r.DB).
+		Select(fmt.Sprintf("%s.name as tag_name, COUNT(at.article_id) as article_count", tagTableName)).
+		Joins(fmt.Sprintf("LEFT JOIN %s at ON %s.id = at.tag_id", articleTagTableName, tagTableName)).
+		Group(fmt.Sprintf("%s.id", tagTableName)).
+		Order("article_count DESC").
+		Limit(1).
+		Scan(&mostArticleTag).Error
+
+	if err != nil {
+		logging.Context(ctx).Error("获取文章数量最多的标签失败", zap.Error(errors.WithStack(err)))
+		mostArticleTag.TagName = ""
+		mostArticleTag.ArticleCount = 0
+	}
+
+	// 关联查询标签数据
+	db := GetTagDB(ctx, r.DB).
+		Select(fmt.Sprintf("%s.*, COUNT(at.article_id) as article_count", tagTableName)).
+		Joins(fmt.Sprintf("LEFT JOIN %s at ON %s.id = at.tag_id", articleTagTableName, tagTableName)).
+		Group(fmt.Sprintf("%s.id", tagTableName))
+
+	// 应用排序
+	if params.SortByID == "asc" {
+		db = db.Order(fmt.Sprintf("%s.id ASC", tagTableName))
+	} else if params.SortByID == "desc" {
+		db = db.Order(fmt.Sprintf("%s.id DESC", tagTableName))
+	}
+
+	if params.SortByArticleCount == "asc" {
+		db = db.Order("article_count ASC")
+	} else if params.SortByArticleCount == "desc" {
+		db = db.Order("article_count DESC")
+	}
+
+	if params.SortByCreate == "asc" {
+		db = db.Order(fmt.Sprintf("%s.created_at ASC", tagTableName))
+	} else if params.SortByCreate == "desc" {
+		db = db.Order(fmt.Sprintf("%s.created_at DESC", tagTableName))
+	}
+
+	if params.SortByUpdate == "asc" {
+		db = db.Order(fmt.Sprintf("%s.updated_at ASC", tagTableName))
+	} else if params.SortByUpdate == "desc" {
+		db = db.Order(fmt.Sprintf("%s.updated_at DESC", tagTableName))
+	}
+
 	// 查询数据
-	var tags []schema.Tag
-	offset := (page - 1) * pageSize
-	if err := GetTagDB(ctx, r.DB).Offset(offset).Limit(pageSize).Order("created_at DESC").Find(&tags).Error; err != nil {
+	var tags []schema.TagResponse
+	offset := (params.Page - 1) * params.PageSize
+	if err := db.Offset(offset).Limit(params.PageSize).Find(&tags).Error; err != nil {
 		return nil, errors.WithStack(err)
 	}
 
 	// 构造响应数据
-	var items []schema.TagResponse
-	for _, tag := range tags {
-		items = append(items, schema.TagResponse{
-			ID:           tag.ID,
-			Name:         tag.Name,
-			ArticleCount: r.GetTagArticleCount(ctx, tag.ID),
-			CreatedAt:    tag.CreatedAt,
-			UpdatedAt:    tag.UpdatedAt,
-		})
-	}
-
-	result.Items = items
-	result.Total = total
-	result.Page = page
-	result.PageSize = pageSize
-	result.TotalPages = int((total + int64(pageSize) - 1) / int64(pageSize))
+	result.Items = tags
+	result.TotalTags = totalTags
+	result.TotalArticles = totalArticles.Count
+	result.TagsWithArticle = tagsWithArticle.Count
+	result.TagNameWithMostArticle = mostArticleTag.TagName
+	result.MostArticleCounts = mostArticleTag.ArticleCount
+	result.Page = params.Page
+	result.PageSize = params.PageSize
+	result.TotalPages = int((totalTags + int64(params.PageSize) - 1) / int64(params.PageSize))
 
 	return &result, nil
 }

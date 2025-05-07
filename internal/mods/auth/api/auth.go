@@ -2,9 +2,11 @@ package api
 
 import (
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 
 	"github.com/codeExpert666/goinkblog-backend/internal/mods/auth/biz"
 	"github.com/codeExpert666/goinkblog-backend/internal/mods/auth/schema"
+	"github.com/codeExpert666/goinkblog-backend/pkg/logging"
 	"github.com/codeExpert666/goinkblog-backend/pkg/util"
 )
 
@@ -13,12 +15,14 @@ type AuthHandler struct {
 	AuthService *biz.AuthService
 }
 
+// GetCaptcha 获取验证码ID
 // @Tags AuthAPI
 // @Summary 获取验证码ID
 // @Success 200 {object} util.ResponseResult{data=schema.Captcha}
 // @Router /api/auth/captcha/id [get]
 func (h *AuthHandler) GetCaptcha(c *gin.Context) {
 	ctx := c.Request.Context()
+	logging.Context(ctx).Debug("进入请求处理 api 层")
 
 	data, err := h.AuthService.GetCaptcha(ctx)
 	if err != nil {
@@ -26,9 +30,11 @@ func (h *AuthHandler) GetCaptcha(c *gin.Context) {
 		return
 	}
 
+	logging.Context(ctx).Debug("验证码 ID", zap.String("captchaID", data.CaptchaID))
 	util.ResSuccess(c, data)
 }
 
+// ResponseCaptcha 响应验证码图片
 // @Tags AuthAPI
 // @Summary 响应验证码图片（宽400px x 高160px）
 // @Param id query string true "验证码ID"
@@ -47,6 +53,7 @@ func (h *AuthHandler) ResponseCaptcha(c *gin.Context) {
 	}
 }
 
+// Register 用户注册
 // @Tags AuthAPI
 // @Summary 用户以邮箱、用户名和密码注册
 // @Param username body string true "用户名" minLength(3) maxLength(20)
@@ -74,6 +81,7 @@ func (h *AuthHandler) Register(c *gin.Context) {
 	util.ResSuccess(c, data)
 }
 
+// Login 用户登录
 // @Tags AuthAPI
 // @Summary 用户以用户名、密码和验证码登录
 // @Param username body string true "用户名"
@@ -101,6 +109,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	util.ResSuccess(c, loginResponse)
 }
 
+// Logout 用户登出
 // @Tags AuthAPI
 // @Security ApiKeyAuth
 // @Summary 用户退出登录
@@ -118,6 +127,7 @@ func (h *AuthHandler) Logout(c *gin.Context) {
 	util.ResOK(c)
 }
 
+// GetCurrentUser 获取当前用户信息
 // @Tags AuthAPI
 // @Security ApiKeyAuth
 // @Summary 获取当前用户信息
@@ -137,6 +147,7 @@ func (h *AuthHandler) GetCurrentUser(c *gin.Context) {
 	util.ResSuccess(c, user)
 }
 
+// UpdateProfile 更新用户资料
 // @Tags AuthAPI
 // @Security ApiKeyAuth
 // @Summary 更新用户资料
@@ -169,6 +180,7 @@ func (h *AuthHandler) UpdateProfile(c *gin.Context) {
 	util.ResSuccess(c, user)
 }
 
+// UploadAvatar 上传用户头像
 // @Tags AuthAPI
 // @Security ApiKeyAuth
 // @Summary 上传用户头像

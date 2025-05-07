@@ -36,24 +36,23 @@ func (h *TagHandler) GetAllTags(c *gin.Context) {
 // @Summary 获取标签列表（带分页）
 // @Param page query int false "页码" minimum(1) default(1)
 // @Param page_size query int false "每页容量" minimum(1) maximum(100) default(10)
+// @Param sort_by_id query string false "如何按照标签ID排序" Enums(desc, asc)
+// @Param sort_by_article_count query string false "如何按照标签的文章数量排序" Enums(desc, asc)
+// @Param sort_by_create query string false "如何按照创建时间排序" Enums(desc, asc)
+// @Param sort_by_update query string false "如何按照更新时间排序" Enums(desc, asc)
 // @Success 200 {object} util.ResponseResult{data=schema.TagPaginationResult}
 // @Failure 400 {object} util.ResponseResult
 // @Failure 500 {object} util.ResponseResult
 // @Router /api/blog/tags/paginate [get]
 func (h *TagHandler) GetTagList(c *gin.Context) {
-	page, err := strconv.Atoi(c.DefaultQuery("page", "1"))
-	if err != nil {
-		util.ResError(c, errors.BadRequest("无效的页数参数"))
-		return
-	}
-	pageSize, err := strconv.Atoi(c.DefaultQuery("pageSize", "10"))
-	if err != nil {
-		util.ResError(c, errors.BadRequest("无效的页容量参数"))
+	var params schema.TagQueryParams
+	if err := util.ParseQuery(c, &params); err != nil {
+		util.ResError(c, err)
 		return
 	}
 
 	ctx := c.Request.Context()
-	data, err := h.TagService.GetTagList(ctx, page, pageSize)
+	data, err := h.TagService.GetTagList(ctx, &params)
 	if err != nil {
 		util.ResError(c, err)
 		return
@@ -171,6 +170,7 @@ func (h *TagHandler) DeleteTag(c *gin.Context) {
 	util.ResOK(c)
 }
 
+// GetHotTags 获取热门标签
 // @Tags TagAPI
 // @Summary 获取热门标签
 // @Param limit query int false "限制" minimum(1) maximum(50) default(10)

@@ -1,6 +1,6 @@
 # GoInk Blog 后端
 
-GoInk Blog 是一个前后端分离的个人博客系统，提供文章管理、用户认证、评论系统等功能，并集成 AI 增强功能，提升内容创作体验。
+GoInk Blog 是一个前后端分离的个人博客系统，提供文章管理、用户认证、评论系统等功能，并集成多模型 AI 增强功能，提升内容创作体验。系统采用模块化设计，具备完善的权限控制和数据统计分析能力。
 
 ## 技术栈
 
@@ -12,9 +12,12 @@ GoInk Blog 是一个前后端分离的个人博客系统，提供文章管理、
 - **认证**: [JWT](https://github.com/golang-jwt/jwt) v3.2.2
 - **API文档**: [Swagger](https://github.com/swaggo/swag) v1.16.4
 - **命令行**: [Urfave/CLI](https://github.com/urfave/cli) v2.27.6
+- **缓存**: [Redis](https://github.com/redis/go-redis) v9.7.1
+- **限流**: [Redis Rate](https://github.com/go-redis/redis_rate) v10.0.1
+- **系统监控**: [Gopsutil](https://github.com/shirou/gopsutil) v3.24.5
 - **数据库**: MySQL v8+, Redis v6+
-- **Go版本**: Go 1.23.6
-- **中间件**: CORS, 限流器, 身份认证, 链路追踪, 请求日志记录等
+- **Go版本**: Go 1.23.6s
+- **中间件**: CORS v1.7.3, 限流器, 身份认证, 链路追踪, 请求日志记录等
 
 ## 项目结构
 
@@ -40,6 +43,7 @@ goinkblog-backend/
 │   ├── swagger/         # Swagger文档
 │   └── wirex/           # 依赖注入
 ├── pkg/                 # 公共包目录
+│   ├── ai/              # 大模型客户端
 │   ├── cachex/          # 缓存实现
 │   ├── errors/          # 错误处理
 │   ├── gormx/           # GORM扩展
@@ -54,7 +58,8 @@ goinkblog-backend/
 │   └── stop.sh          # 停止脚本
 ├── static/              # 静态资源
 │   ├── openapi/         # OpenAPI文档
-│   └── pic/             # 图片资源
+│   ├── pic/             # 图片资源
+│   └── index.html       # 单页应用
 ├── test/                # 测试文件
 ├── go.mod               # Go模块文件
 ├── go.sum               # Go依赖校验
@@ -85,12 +90,23 @@ goinkblog-backend/
 ### 📊 数据分析
 - **内容统计** — 文章数据、内容分布分析
 - **用户分析** — 访问统计、活跃度分析
-- **系统监控** — 日志查询与分析
+- **系统监控** — 实时跟踪CPU、内存、磁盘IO使用情况
+- **性能分析** — 监测数据库性能和缓存状态
+- **日志管理** — 提供系统日志查询功能
 
 ### 🤖 AI增强
 - **智能创作** — 内容润色、自动生成摘要
 - **智能推荐** — 标题建议、相关标签推荐
-- **灵活配置** — 支持多种 AI 模型(OpenAI/Ollama)
+- **多模型支持** — 支持多种 AI 模型(OpenAI/Ollama)
+- **模型管理** — 动态加载模型、负载均衡
+- **请求限流** — 基于令牌桶的 AI 请求限流
+  
+### 🛠️ 管理功能（管理员）
+- **权限管理** — Casbin 权限系统，支持角色分配、权限策略配置、权限验证
+- **分类管理** — 文章分类的创建、编辑、删除，支持分类统计
+- **标签管理** — 文章标签的创建、编辑、删除，支持标签统计
+- **评论管理** — 评论查询与审核，支持评论统计
+- **AI模型管理** — 模型配置添加、权重调整、限流幅度调节、模型性能监控
 
 ## 开发与部署
 
@@ -100,6 +116,7 @@ goinkblog-backend/
 - MySQL 8.0+
 - Redis 6.0+
 - 支持 Ollama 本地 LLM 模型用于 AI 增强功能
+- 支持 OpenAI API 或其他兼容 API 接入
 
 ### 开发工具
 
@@ -193,17 +210,46 @@ make build
 
 ## AI功能配置
 
-GoInk Blog 目前支持 local（本地 Ollama）和 openai 两种AI模型提供商，可在配置文件中设置：
+GoInk Blog 支持多种AI模型提供商，采用模型选择器动态管理多个模型，可在配置文件中设置：
 
 ```json
 "ai": {
-  "provider": "local",
-  "api_key": "",
-  "endpoint": "http://localhost:11434/api/generate",
-  "model": "gemma3:12b",
-  "temperature": 0.7
+  "models": [
+    {
+      "provider": "local",
+      "api_key": "ollama",
+      "endpoint": "http://localhost:11434/v1/chat/completions",
+      "model_name": "gemma3:12b",
+      "temperature": 0.7,
+      "timeout": 90,
+      "active": true,
+      "description": "Ollama model",
+      "rpm": 10,
+      "weight": 100
+    }
+  ],
+  "selector": {
+    "load_models_interval": 5,
+    "update_weight_interval": 2
+  }
 }
 ```
+
+配置说明：
+- `models`: 支持配置多个AI模型
+  - `provider`: 模型提供商，目前支持 "local"(Ollama) 和 "openai"
+  - `api_key`: API密钥
+  - `endpoint`: API端点
+  - `model_name`: 模型名称
+  - `temperature`: 温度参数，控制生成文本的随机性
+  - `timeout`: 请求超时时间（秒）
+  - `active`: 是否启用该模型
+  - `description`: 模型描述
+  - `rpm`: 每分钟请求限制
+  - `weight`: 模型权重，用于负载均衡
+- `selector`: 模型选择器配置
+  - `load_models_interval`: 从数据库加载模型间隔（单位为分钟）
+  - `update_weight_interval`: 权重更新间隔（用于模型负载均衡，单位为分钟）
 
 ## 许可证
 

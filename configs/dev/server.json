@@ -18,9 +18,9 @@
     },
     "admin": {
       "id": 1,
-      "username": "XinnZ",
-      "email": "zhouxin23333@gmail.com",
-      "password": "Zx199908310019",
+      "username": "Admin",
+      "email": "admin@email.com",
+      "password": "admin123",
       "avatar": "/pic/avatars/admin.jpg",
       "bio": "I'm the administrator of GoInkBlog.",
       "role": "admin"
@@ -30,7 +30,7 @@
     "db": {
       "debug": true,
       "auto_migrate": true,
-      "dsn": "root:zx123456@tcp(127.0.0.1:3306)/goinkblog?charset=utf8mb4&parseTime=True&loc=Local",
+      "dsn": "root:root@tcp(127.0.0.1:3306)/goinkblog?charset=utf8mb4&parseTime=True&loc=Local",
       "max_idle_conns": 50,
       "max_open_conns": 100,
       "max_life_time": 86400,

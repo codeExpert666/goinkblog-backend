@@ -48,3 +48,6 @@ logs/
 # Runtime files
 *.lock
 *.pid
+
+# Production config files
+/configs/dev/

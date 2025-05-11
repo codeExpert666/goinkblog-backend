@@ -1,8 +1,8 @@
 # 构建阶段
 FROM golang:1.23-alpine AS build
 
-# 安装必要的工具
-RUN apk add --no-cache git make
+ARG APP=goinkblog
+ARG VERSION=v1.0.0
 
 # 设置Go代理
 ENV GOPROXY="https://goproxy.cn"
@@ -10,32 +10,16 @@ ENV GOPROXY="https://goproxy.cn"
 # 设置工作目录
 WORKDIR /app
 
-# 复制go.mod和go.sum
-COPY go.mod go.sum ./
-
-# 下载依赖
-RUN go mod download
-
-# 安装wire和swag
-RUN go install github.com/google/wire/cmd/wire@latest
-RUN go install github.com/swaggo/swag/cmd/swag@latest
-
 # 复制项目文件
 COPY . .
 
-# 生成依赖注入代码和Swagger文档
-RUN make gen
-
 # 构建应用
-RUN make build
+RUN go build -ldflags "-X main.VERSION=${VERSION}" -o ${APP} ./
 
 # 运行阶段
 FROM alpine:latest
 
 WORKDIR /app
-
-# 安装运行时依赖
-RUN apk add --no-cache ca-certificates tzdata
 
 # 复制构建好的应用
 COPY --from=build /app/goinkblog /app/

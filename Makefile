@@ -1,22 +1,22 @@
 .PHONY: all clean build run gen wire swagger start stop restart test
 
 # 定义应用名称
-APP_NAME=goinkblog
+APP_NAME = goinkblog
 
 # GO命令
-GOCMD=go
-GOBUILD=$(GOCMD) build
-GOTEST=$(GOCMD) test
-GOGET=$(GOCMD) get
+GOCMD = go
+GOBUILD = $(GOCMD) build
+GOTEST = $(GOCMD) test
+GOGET = $(GOCMD) get
 
 # 定义版本
-VERSION=$(shell git describe --tags --always 2>/dev/null || echo "v1.0.0")
+VERSION = v1.0.0
 
 # 定义构建参数
-LDFLAGS=-ldflags "-X main.VERSION=$(VERSION)"
+LDFLAGS=-ldflags "-X main.VERSION = $(VERSION)"
 
 # 定义SWAGGER参数
-SWAGGER_ARGS=-o ./internal/swagger
+SWAGGER_ARGS = -o ./internal/swagger
 
 all: clean gen build run
 

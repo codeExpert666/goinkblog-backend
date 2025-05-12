@@ -20,7 +20,7 @@ type Middleware struct {
 		Disable             bool     `json:"disable"`
 		SkippedPathPrefixes []string `json:"skipped_path_prefixes"`
 		SigningMethod       string   `default:"HS512" json:"signing_method"`
-		SigningKey          string   `default:"fqe@#$%^&*()_+" json:"signing_key"`
+		SigningKey          string   `default:"fqe@#$%^fa^&&*()_+" json:"signing_key"`
 		OldSigningKey       string   `json:"old_signing_key"`
 		Expired             int      `default:"86400" json:"expired"`
 

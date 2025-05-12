@@ -40,8 +40,8 @@ type General struct {
 
 	Admin struct {
 		ID       uint   `default:"1" json:"id"`
-		Username string `default:"XinnZ" json:"username"`
-		Email    string `default:"zhouxin23333@gmail.com" json:"email"`
+		Username string `default:"Admin" json:"username"`
+		Email    string `default:"admin@email.com" json:"email"`
 		Password string `json:"password"`
 		Avatar   string `default:"/pic/avatars/admin.jpg" json:"avatar"`
 		Bio      string `default:"I'm the administrator of GoInkBlog." json:"bio"`
@@ -53,7 +53,7 @@ type Storage struct {
 	DB struct {
 		Debug        bool   `json:"debug"`
 		AutoMigrate  bool   `json:"auto_migrate"`
-		DSN          string `default:"root:123456@tcp(127.0.0.1:3306)/goinkblog?charset=utf8mb4&parseTime=True&loc=Local" json:"dsn"`
+		DSN          string `default:"root:root@tcp(127.0.0.1:3306)/goinkblog?charset=utf8mb4&parseTime=True&loc=Local" json:"dsn"`
 		MaxIdleConns int    `default:"50" json:"max_idle_conns"`
 		MaxOpenConns int    `default:"100" json:"max_open_conns"`
 		MaxLifetime  int    `default:"86400" json:"max_life_time"`
@@ -67,8 +67,8 @@ type Storage struct {
 		Redis     struct {
 			Addr     string `default:"127.0.0.1:6379" json:"addr"`
 			DB       int    `json:"db"`
-			Username string `default:"root" json:"username"`
-			Password string `default:"123456" json:"password"`
+			Username string `default:"" json:"username"`
+			Password string `default:"" json:"password"`
 		} `json:"redis"`
 	} `json:"cache"`
 }

@@ -51,3 +51,9 @@ logs/
 
 # Production config files
 /configs/prod/
+
+# static files
+/static/pic/avatars/*
+!/static/pic/avatars/.gitkeep
+/static/pic/covers/*
+!/static/pic/covers/.gitkeep

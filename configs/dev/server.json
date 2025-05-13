@@ -7,7 +7,7 @@
     "disable_print_config": false,
     "pprof_addr": "",
     "http": {
-      "addr": ":52443",
+      "addr": ":8080",
       "shutdown_timeout": 30,
       "max_content_length": 67108864,
       "read_timeout": 60,

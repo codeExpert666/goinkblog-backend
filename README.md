@@ -159,7 +159,7 @@ make build
 # 运行开发环境
 make run
 
-# 启动服务（通过脚本，后台运行）
+# 启动服务（构建+运行）
 make start
 
 # 停止服务
@@ -174,7 +174,7 @@ make restart
 启动应用后，访问以下地址查看后端服务信息（端口可在 `configs` 目录中配置）：
 
 ```
-http://localhost:52443/
+http://localhost:8080/
 ```
 
 ### 部署指南
@@ -192,8 +192,8 @@ make build
 ```
 
 参数说明：
-- `-d`：配置文件目录，默认为 `configs`
-- `-c`：配置环境，默认为 `dev`
+- `-d`：工作目录，默认为 `configs`
+- `-c`：配置目录 **（相对于工作目录）**，默认为 `dev`
 - `-s`：静态文件目录，默认为 `static`
 - `-daemon`：开启守护进程模式
 
@@ -206,6 +206,33 @@ make build
 3. 使用以下命令启动:
 ```bash
 ./goinkblog start -d configs -c prod -s static -daemon
+```
+
+#### Docker部署
+
+1. 构建Docker镜像
+```bash
+# 构建镜像，默认版本为v1.0.0
+docker build -t goinkblog:v1.0.0 .
+
+# 指定应用版本构建
+docker build --build-arg VERSION=v1.1.0 -t goinkblog:v1.1.0 .
+```
+
+2. 运行Docker容器
+```bash
+# 使用开发环境配置启动（默认）
+docker run -d --name goinkblog -p 8080:8080 goinkblog:v1.0.0
+
+# 使用生产环境配置启动
+docker run -d --name goinkblog -p 8080:8080 -e CONFIG_DIR=prod goinkblog:v1.0.0
+
+# 挂载外部配置目录和静态资源目录
+docker run -d --name goinkblog \
+  -p 8080:8080 \
+  -v $(pwd)/configs:/app/configs \
+  -v $(pwd)/static:/app/static \
+  goinkblog:v1.0.0
 ```
 
 ## AI功能配置

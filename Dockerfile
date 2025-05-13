@@ -19,6 +19,9 @@ RUN go build -ldflags "-X main.VERSION=${VERSION}" -o ${APP} ./
 # 运行阶段
 FROM alpine:latest
 
+# 设置配置目录，默认为开发环境配置
+ENV CONFIG_DIR=dev
+
 WORKDIR /app
 
 # 复制构建好的应用
@@ -31,4 +34,4 @@ COPY --from=build /app/static /app/static
 EXPOSE 8080
 
 # 启动命令
-ENTRYPOINT ["./goinkblog", "start", "-d", "configs", "-c", "prod", "-s", "static"]
+ENTRYPOINT ["./goinkblog", "start", "-d", "configs", "-c", "${CONFIG_DIR}", "-s", "static"]

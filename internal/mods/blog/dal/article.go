@@ -5,14 +5,12 @@ import (
 	"fmt"
 	"time"
 
-	"go.uber.org/zap"
 	"gorm.io/gorm"
 
 	userSchema "github.com/codeExpert666/goinkblog-backend/internal/mods/auth/schema"
 	"github.com/codeExpert666/goinkblog-backend/internal/mods/blog/schema"
 	commentSchema "github.com/codeExpert666/goinkblog-backend/internal/mods/comment/schema"
 	"github.com/codeExpert666/goinkblog-backend/pkg/errors"
-	"github.com/codeExpert666/goinkblog-backend/pkg/logging"
 	"github.com/codeExpert666/goinkblog-backend/pkg/util"
 )
 
@@ -100,13 +98,11 @@ func (r *ArticleRepository) GetList(ctx context.Context, params *schema.ArticleQ
 	if params.Keyword != "" {
 		db = db.Where("a.title LIKE ? OR a.summary LIKE ?", "%"+params.Keyword+"%", "%"+params.Keyword+"%")
 	}
-	logging.Context(ctx).Debug("params.TimeRange", zap.String("params.TimeRange", params.TimeRange))
 	if params.TimeRange != "" {
 		switch params.TimeRange {
 		case "today":
 			// 今天创建的文章
 			today := time.Now().Format("2006-01-02")
-			logging.Context(ctx).Debug("today", zap.String("today", today))
 			db = db.Where("a.created_at >= ?", today+" 00:00:00")
 		case "week":
 			// 本周创建的文章（从本周一开始）

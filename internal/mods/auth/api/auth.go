@@ -2,11 +2,9 @@ package api
 
 import (
 	"github.com/gin-gonic/gin"
-	"go.uber.org/zap"
 
 	"github.com/codeExpert666/goinkblog-backend/internal/mods/auth/biz"
 	"github.com/codeExpert666/goinkblog-backend/internal/mods/auth/schema"
-	"github.com/codeExpert666/goinkblog-backend/pkg/logging"
 	"github.com/codeExpert666/goinkblog-backend/pkg/util"
 )
 
@@ -22,7 +20,6 @@ type AuthHandler struct {
 // @Router /api/auth/captcha/id [get]
 func (h *AuthHandler) GetCaptcha(c *gin.Context) {
 	ctx := c.Request.Context()
-	logging.Context(ctx).Debug("进入请求处理 api 层")
 
 	data, err := h.AuthService.GetCaptcha(ctx)
 	if err != nil {
@@ -30,7 +27,6 @@ func (h *AuthHandler) GetCaptcha(c *gin.Context) {
 		return
 	}
 
-	logging.Context(ctx).Debug("验证码 ID", zap.String("captchaID", data.CaptchaID))
 	util.ResSuccess(c, data)
 }
 

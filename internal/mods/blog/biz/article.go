@@ -439,7 +439,6 @@ func (s *ArticleService) FavoriteArticle(ctx context.Context, userID, articleID 
 
 // GetUserLikedArticles 获取用户点赞的文章
 func (s *ArticleService) GetUserLikedArticles(ctx context.Context, userID uint, page, pageSize int) (*schema.ArticlePaginationResult, error) {
-	logging.Context(ctx).Debug("获取用户点赞的文章", zap.Uint("user_id", userID), zap.Int("page", page), zap.Int("page_size", pageSize))
 	result, err := s.ArticleRepository.GetUserLikedArticles(ctx, userID, page, pageSize)
 	if err != nil {
 		return nil, err

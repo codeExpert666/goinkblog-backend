@@ -144,7 +144,6 @@ func (s *StatService) GetCPUInfo(ctx context.Context) schema.CPUInfo {
 
 	// 获取CPU信息
 	cpuInfoStats, err := cpu.Info()
-	logging.Context(ctx).Debug("cpu信息", zap.Any("cpuInfoStats", cpuInfoStats))
 	if err != nil {
 		logging.Context(ctx).Error("获取CPU信息失败", zap.Error(err))
 	} else if len(cpuInfoStats) == 0 {
@@ -457,8 +456,6 @@ func (s *StatService) GetCacheInfo(ctx context.Context) schema.CacheInfo {
 		logging.Context(ctx).Error("获取Redis信息失败", zap.Error(err))
 		return info
 	}
-
-	logging.Context(ctx).Debug("查看 redisInfo 内容", zap.String("redisInfo", redisInfo))
 
 	// 解析INFO命令的输出
 	var hits, misses int64

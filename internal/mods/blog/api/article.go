@@ -49,8 +49,6 @@ func (h *ArticleHandler) GetArticleList(c *gin.Context) {
 		return
 	}
 
-	logging.Context(ctx).Debug("params.CategoryIDs", zap.Uints("params.CategoryIDs", params.CategoryIDs))
-
 	data, err := h.ArticleService.GetArticleList(ctx, &params)
 	if err != nil {
 		util.ResError(c, err)

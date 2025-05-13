@@ -39,7 +39,6 @@ func (s *AuthService) ParseUserID(c *gin.Context) (uint, error) {
 	invalidToken := errors.Unauthorized("无效的访问令牌")
 	// 从请求中获取token
 	token := util.GetToken(c)
-	logging.Context(c.Request.Context()).Debug("token内容为", zap.String("token", token))
 	if token == "" {
 		return 0, invalidToken
 	}
@@ -106,13 +105,11 @@ func (s *AuthService) GetCaptcha(ctx context.Context) (*schema.Captcha, error) {
 // 生成验证码图片并设置相应的HTTP头
 func (s *AuthService) ResponseCaptcha(ctx context.Context, w http.ResponseWriter, id string, reload bool) error {
 	if reload && !captcha.Reload(id) {
-		logging.Context(ctx).Debug("验证码ID不存在", zap.String("captchaID", id))
 		return errors.NotFound("找不到对应的验证码ID")
 	}
 
 	err := captcha.WriteImage(w, id, config.C.Util.Captcha.Width, config.C.Util.Captcha.Height)
 	if err != nil {
-		logging.Context(ctx).Debug("生成验证码图片出错", zap.Error(err))
 		if errors.Is(err, captcha.ErrNotFound) {
 			return errors.NotFound("找不到对应的验证码ID")
 		}
@@ -162,7 +159,6 @@ func (s *AuthService) Register(ctx context.Context, req *schema.RegisterRequest)
 		Password: string(hashedPassword),
 		Role:     "user", // 默认角色
 	}
-	logging.Context(ctx).Debug("新用户的密码", zap.String("password", user.Password))
 
 	if err := s.UserRepository.Create(ctx, user); err != nil {
 		return nil, err
@@ -205,7 +201,6 @@ func (s *AuthService) Login(ctx context.Context, req *schema.LoginRequest) (*sch
 	user, err := s.UserRepository.GetByUsername(ctx, req.Username)
 	if err != nil {
 		if errors.IsNotFound(err) {
-			logging.Context(ctx).Debug("用户名不存在")
 			return nil, errors.BadRequest("用户名或密码错误")
 		}
 		return nil, err
@@ -213,7 +208,6 @@ func (s *AuthService) Login(ctx context.Context, req *schema.LoginRequest) (*sch
 
 	// 验证密码
 	if !s.UserRepository.CheckPassword(ctx, user, req.Password) {
-		logging.Context(ctx).Debug("输入密码错误", zap.String("password", req.Password))
 		return nil, errors.BadRequest("用户名或密码错误")
 	}
 

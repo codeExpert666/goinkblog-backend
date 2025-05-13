@@ -149,7 +149,6 @@ func useHTTPMiddlewares(ctx context.Context, e *gin.Engine, injector *wirex.Inje
 
 	// 定义auth函数，通过RBAC策略来确定请求是否需要认证
 	authFunc := func(c *gin.Context) bool {
-		logging.Context(c.Request.Context()).Debug("进入 authFunc 函数")
 		// 检查"anonymous"用户是否有权访问
 		e := injector.M.Auth.CasbinHandler.CasbinService.Casbinx.GetEnforcer()
 		allowed, err := e.Enforce(
@@ -161,7 +160,6 @@ func useHTTPMiddlewares(ctx context.Context, e *gin.Engine, injector *wirex.Inje
 			logging.Context(c.Request.Context()).Error("认证中间件检查请求是否需要认证失败", zap.Error(err))
 			return true
 		}
-		logging.Context(c.Request.Context()).Debug("请求是否需要认证", zap.Bool("need_auth", !allowed))
 		// 如果allowed为true，表示匿名用户可以访问，不需要认证
 		return !allowed
 	}

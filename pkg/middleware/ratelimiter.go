@@ -30,10 +30,8 @@ func RateLimiterWithConfig(cfg RateLimiterConfig) gin.HandlerFunc {
 	redisRateLimiter := NewRatelimiterRedis(cfg.RedisConfig)
 
 	return func(c *gin.Context) {
-		logging.Context(c.Request.Context()).Debug("进入限流器中间件")
 		if !AllowedPathPrefixes(c, cfg.AllowedPathPrefixes...) ||
 			SkippedPathPrefixes(c, cfg.SkippedPathPrefixes...) {
-			logging.Context(c.Request.Context()).Debug("跳过限流器中间件")
 			c.Next()
 			return
 		}
@@ -60,7 +58,6 @@ func RateLimiterWithConfig(cfg RateLimiterConfig) gin.HandlerFunc {
 			logging.Context(ctx).Error("限流器中间件出错", zap.Error(err))
 			util.ResError(c, errors.InternalServerError(""))
 		} else if allowed {
-			logging.Context(c.Request.Context()).Debug("限流器是否允许请求", zap.Bool("allowed", allowed))
 			c.Next()
 		} else {
 			util.ResError(c, errors.TooManyRequests(""))

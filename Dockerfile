@@ -34,4 +34,4 @@ COPY --from=build /app/static /app/static
 EXPOSE 8080
 
 # 启动命令
-ENTRYPOINT ["./goinkblog", "start", "-d", "configs", "-c", "${CONFIG_DIR}", "-s", "static"]
+ENTRYPOINT ./goinkblog start -d configs -c $CONFIG_DIR -s static
